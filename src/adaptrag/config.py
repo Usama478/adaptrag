@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     environment: str = "dev"
     log_level: str = "INFO"
     data_dir: Path = Path("./data")
+    max_upload_mb: int = 20
 
 
 @lru_cache

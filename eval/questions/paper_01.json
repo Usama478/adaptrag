@@ -1,0 +1,26 @@
+{
+  "paper": "paper_01_single_column.pdf",
+  "questions": [
+    {
+      "id": "p01_q1",
+      "type": "factual",
+      "question": "Write your question here?",
+      "answer_page": 3,
+      "note": "Where the answer is, in your own words"
+    },
+    {
+      "id": "p01_q2",
+      "type": "table",
+      "question": "Write your question here?",
+      "answer_page": 8, 
+      "note": "Which table, which row"
+    },
+    {
+      "id": "p01_q3",
+      "type": "two_section",
+      "question": "Write your question here?",
+      "answer_page": 2,
+      "note": "Needs page 2 (intro) and page 7 (results)"
+    }
+  ]
+}
