@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 from adaptrag.config import Settings, get_settings
+from adaptrag.storage import compute_sha256, save_upload
 
 router = APIRouter()
 
@@ -30,4 +31,12 @@ async def upload_document(
     if not data.startswith(PDF_MAGIC):
         raise HTTPException(status_code=415, detail="This file is not a valid PDF.")
 
-    return {"filename": filename, "size_bytes": len(data), "status": "accepted"}
+    file_hash = compute_sha256(data)
+    save_upload(data, file_hash, settings.data_dir / "uploads")
+
+    return {
+        "filename": filename,
+        "file_hash": file_hash,
+        "size_bytes": len(data),
+        "status": "accepted",
+    }

@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     app_name: str = "AdaptRAG"
     environment: str = "dev"
     log_level: str = "INFO"
-    data_dir: Path = Path("./data")
     max_upload_mb: int = 20
+    data_dir: Path = Path("data")
 
 
 @lru_cache
