@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     max_upload_mb: int = 20
     data_dir: Path = Path("data")
+    database_url: str = "postgresql+psycopg://adaptrag:change-me@localhost:5432/adaptrag"
 
 
 @lru_cache
