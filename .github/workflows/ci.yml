@@ -1,10 +1,32 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: adaptrag
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: adaptrag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U adaptrag -d adaptrag"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      ADAPTRAG_DATABASE_URL: postgresql+psycopg://adaptrag:ci-password@localhost:5432/adaptrag
+      PGPASSWORD: ci-password
+
     steps:
       - uses: actions/checkout@v4
 
@@ -13,17 +35,26 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - name: Install project
+      - name: Install
         run: pip install -e ".[dev]"
 
-      - name: Lint (ruff check)
+      - name: Lint
         run: python -m ruff check .
 
-      - name: Format check (ruff format)
+      - name: Format check
         run: python -m ruff format --check .
 
-      - name: Type check (mypy)
+      - name: Type check
         run: python -m mypy
 
-      - name: Tests (pytest)
+      - name: Apply migrations
+        run: python -m alembic upgrade head
+
+      - name: Check models match migrations
+        run: python -m alembic check
+
+      - name: Create test database
+        run: psql -h localhost -U adaptrag -d adaptrag -c "CREATE DATABASE adaptrag_test;"
+
+      - name: Tests
         run: python -m pytest
