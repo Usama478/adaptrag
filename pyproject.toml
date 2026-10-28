@@ -13,6 +13,8 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic-settings>=2.4",
     "python-multipart",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.optional-dependencies]
