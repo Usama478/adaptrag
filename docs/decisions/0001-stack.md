@@ -1,6 +1,7 @@
 # 0001: Framework, vector store, metadata store
 
 Date: 2026-10-17
+Status: SQLite choice superseded by 0004 (PostgreSQL). FastAPI and Chroma still stand.
 
 ## 1. Web framework
 
