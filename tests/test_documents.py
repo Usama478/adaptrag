@@ -1,52 +1,75 @@
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
+import httpx
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine, func, select
+from sqlalchemy.orm import Session
 
-from adaptrag.config import Settings, get_settings
-from adaptrag.main import create_app
+from adaptrag.models import Document
 
+PDF_BYTES = b"%PDF-1.7 fake body"
 
-def make_client(data_dir: Path, max_upload_mb: int = 20) -> TestClient:
-    app = create_app()
-    app.dependency_overrides[get_settings] = lambda: Settings(
-        max_upload_mb=max_upload_mb, data_dir=data_dir
-    )
-    return TestClient(app)
+ClientFactory = Callable[..., TestClient]
 
 
-def test_accepts_pdf(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    files = {"file": ("a.pdf", b"%PDF-1.7 fake body", "application/pdf")}
-    response = client.post("/documents", files=files)
+def upload(client: TestClient, content: bytes = PDF_BYTES, name: str = "a.pdf") -> httpx.Response:
+    files = {"file": (name, content, "application/pdf")}
+    return client.post("/documents", files=files)
+
+
+def count_documents(engine: Engine) -> int:
+    with Session(engine) as session:
+        return session.scalar(select(func.count()).select_from(Document)) or 0
+
+
+def test_new_upload_creates_document(make_client: ClientFactory, db_engine: Engine) -> None:
+    response = upload(make_client())
     assert response.status_code == 202
-    assert response.json()["status"] == "accepted"
+    assert response.json()["status"] == "uploaded"
+    assert response.json()["duplicate"] is False
+    assert count_documents(db_engine) == 1
 
 
-def test_upload_saves_file_named_by_hash(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    content = b"%PDF-1.7 fake body"
-    files = {"file": ("a.pdf", content, "application/pdf")}
-    file_hash = client.post("/documents", files=files).json()["file_hash"]
-    assert file_hash == hashlib.sha256(content).hexdigest()
-    assert (tmp_path / "uploads" / f"{file_hash}.pdf").read_bytes() == content
+def test_upload_saves_file_named_by_hash(make_client: ClientFactory, tmp_path: Path) -> None:
+    file_hash = upload(make_client()).json()["file_hash"]
+    assert file_hash == hashlib.sha256(PDF_BYTES).hexdigest()
+    assert (tmp_path / "uploads" / f"{file_hash}.pdf").read_bytes() == PDF_BYTES
 
 
-def test_rejected_file_is_not_saved(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    files = {"file": ("fake.pdf", b"I am not a PDF", "application/pdf")}
-    assert client.post("/documents", files=files).status_code == 415
+def test_rejected_file_is_not_saved(
+    make_client: ClientFactory, db_engine: Engine, tmp_path: Path
+) -> None:
+    response = upload(make_client(), content=b"I am not a PDF", name="fake.pdf")
+    assert response.status_code == 415
     assert not (tmp_path / "uploads").exists()
+    assert count_documents(db_engine) == 0
 
 
-def test_rejects_wrong_extension(tmp_path: Path) -> None:
-    client = make_client(tmp_path)
-    files = {"file": ("notes.txt", b"hello", "text/plain")}
-    assert client.post("/documents", files=files).status_code == 415
+def test_rejects_wrong_extension(make_client: ClientFactory) -> None:
+    response = upload(make_client(), content=b"hello", name="notes.txt")
+    assert response.status_code == 415
 
 
-def test_rejects_too_large(tmp_path: Path) -> None:
-    client = make_client(tmp_path, max_upload_mb=1)
+def test_rejects_too_large(make_client: ClientFactory) -> None:
     big = b"%PDF-" + b"x" * (2 * 1024 * 1024)
-    files = {"file": ("big.pdf", big, "application/pdf")}
-    assert client.post("/documents", files=files).status_code == 413
+    response = upload(make_client(max_upload_mb=1), content=big, name="big.pdf")
+    assert response.status_code == 413
+
+
+def test_duplicate_upload_returns_same_document(make_client: ClientFactory) -> None:
+    client = make_client()
+    first = upload(client, name="a.pdf")
+    second = upload(client, name="renamed.pdf")
+    assert first.status_code == 202
+    assert second.status_code == 200
+    assert second.json()["duplicate"] is True
+    assert second.json()["document_id"] == first.json()["document_id"]
+
+
+def test_duplicate_creates_only_one_row(make_client: ClientFactory, db_engine: Engine) -> None:
+    client = make_client()
+    upload(client)
+    upload(client)
+    assert count_documents(db_engine) == 1
