@@ -7,6 +7,7 @@ Unusable PDFs raise a ParseError subclass with a message safe to show users.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pymupdf
 
@@ -42,8 +43,9 @@ def clean_text(raw: str) -> str:
 def parse_pdf(path: Path, min_chars_per_page: int = MIN_CHARS_PER_PAGE) -> ParsedDocument:
     """Parse the PDF at `path` into text blocks with 1-based page numbers."""
     try:
-        # PyMuPDF's Document() has no type hints; strict mypy refuses untyped calls.
-        doc = pymupdf.open(path)  # type: ignore[no-untyped-call]
+        # PyMuPDF's type hints are incomplete (Document() is untyped, iterating it is
+        # mistyped), so `doc` is Any. Safe: only this module touches PyMuPDF.
+        doc: Any = pymupdf.open(path)  # type: ignore[no-untyped-call]
     except Exception as exc:
         raise CorruptPDFError("The file could not be opened as a PDF.") from exc
 
