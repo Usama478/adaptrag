@@ -1,0 +1,49 @@
+"""Tests for parser v0. Each test builds its own tiny PDF; no sample files needed."""
+
+from pathlib import Path
+
+import pymupdf
+
+from adaptrag.parsing.blocks import BlockType
+from adaptrag.parsing.pdf import PARSER_VERSION, clean_text, parse_pdf
+
+
+def make_pdf(path: Path, pages: list[str]) -> Path:
+    """Write a small PDF with one text string per page ("" means a blank page)."""
+    doc = pymupdf.open()
+    for text in pages:
+        page = doc.new_page()
+        if text:
+            page.insert_text((72, 72), text)
+    doc.save(path)
+    doc.close()
+    return path
+
+
+def test_clean_text_joins_lines_and_extra_spaces() -> None:
+    assert clean_text("permission to\nreproduce  the\n") == "permission to reproduce the"
+
+
+def test_clean_text_of_only_whitespace_is_empty() -> None:
+    assert clean_text(" \n\t ") == ""
+
+
+def test_page_numbers_are_one_based(tmp_path: Path) -> None:
+    pdf = make_pdf(tmp_path / "two.pdf", ["first page", "second page"])
+    doc = parse_pdf(pdf)
+    assert doc.page_count == 2
+    assert [(b.page, b.text) for b in doc.blocks] == [(1, "first page"), (2, "second page")]
+
+
+def test_blank_page_counts_but_gives_no_blocks(tmp_path: Path) -> None:
+    pdf = make_pdf(tmp_path / "blank.pdf", ["only text", ""])
+    doc = parse_pdf(pdf)
+    assert doc.page_count == 2
+    assert [b.page for b in doc.blocks] == [1]
+
+
+def test_v0_marks_every_block_as_paragraph(tmp_path: Path) -> None:
+    pdf = make_pdf(tmp_path / "one.pdf", ["hello"])
+    doc = parse_pdf(pdf)
+    assert doc.parser_version == PARSER_VERSION
+    assert all(b.block_type is BlockType.PARAGRAPH for b in doc.blocks)
