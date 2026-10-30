@@ -20,9 +20,9 @@ def main() -> None:
     print(f"page size: {page.rect}")
     print()
 
-    print("BLOCKS: number, x0, y0, type, first 60 characters")
+    print("BLOCKS: number, x0, y0, x1, type, first 60 characters")
     for b in page.get_text("blocks"):
-        print(b[5], round(b[0]), round(b[1]), b[6], repr(b[4][:60]))
+        print(b[5], round(b[0]), round(b[1]), round(b[2]), b[6], repr(b[4][:60]))
     print()
 
     print("FONTS: size, bold?, text  (first span of each line, text blocks only)")

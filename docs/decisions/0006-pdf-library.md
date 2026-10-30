@@ -30,3 +30,7 @@ detection), and help finding tables.
   product would need a commercial license or a switch to pdfplumber.
 - Table detection quality is unknown until Step 9. If it is poor on the
   table-heavy paper, revisit pdfplumber for tables only, with measurements.
+
+- PyMuPDF's `Document()` has no type hints. The single call in `pdf.py` uses
+  `# type: ignore[no-untyped-call]`; switch to mypy's `untyped_calls_exclude`
+  if more such calls appear.
