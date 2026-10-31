@@ -13,6 +13,9 @@ from adaptrag.db import get_engine
 from adaptrag.embedding.base import Embedder
 from adaptrag.embedding.fake import FakeEmbedder
 from adaptrag.embedding.provider import get_app_embedder
+from adaptrag.llm.base import LLM
+from adaptrag.llm.fake import FakeLLM
+from adaptrag.llm.provider import get_app_llm
 from adaptrag.main import create_app
 from adaptrag.models import EMBEDDING_DIMENSION, Base
 
@@ -49,21 +52,32 @@ def db_engine(migrated_engine: Engine) -> Iterator[Engine]:
 def make_client(
     db_engine: Engine, test_database_url: str, tmp_path: Path
 ) -> Callable[..., TestClient]:
-    """Build an app that uses the test database, a temporary data folder and a fake embedder.
+    """Build an app that uses the test database, a temporary data folder, a fake embedder
+    and a fake LLM.
 
     Uploads are saved under tmp_path / "uploads" (data_dir / "uploads", as in
-    routes/documents.py). The real model is never loaded here.
+    routes/documents.py). The real model is never loaded and no real LLM is called here.
+    FakeEmbedder scores are near 0, so a test that needs an answer past the retrieval
+    layer passes retrieval_min_score=-1.0 (every cosine score is >= -1).
     """
 
-    def _make(max_upload_mb: int = 20, embedder: Embedder | None = None) -> TestClient:
+    def _make(
+        max_upload_mb: int = 20,
+        embedder: Embedder | None = None,
+        llm: LLM | None = None,
+        retrieval_min_score: float = 0.55,
+    ) -> TestClient:
         app = create_app()
         app.dependency_overrides[get_settings] = lambda: Settings(
             database_url=test_database_url,
             data_dir=tmp_path,
             max_upload_mb=max_upload_mb,
+            retrieval_min_score=retrieval_min_score,
         )
         chosen = embedder if embedder is not None else FakeEmbedder(dimension=EMBEDDING_DIMENSION)
         app.dependency_overrides[get_app_embedder] = lambda: chosen
+        chosen_llm = llm if llm is not None else FakeLLM(reply="Fake answer [1].")
+        app.dependency_overrides[get_app_llm] = lambda: chosen_llm
         return TestClient(app)
 
     return _make

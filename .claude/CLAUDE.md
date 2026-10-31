@@ -40,6 +40,8 @@ Decide per component by the cost of changing it later.
     or another store later stays behind it (note 0013).
   - Embedding model: code receives an `Embedder` (`embedding/base.py`); routes get it
     through `Depends(get_app_embedder)`, tests override it with `FakeEmbedder`.
+  - LLM: code receives an `LLM` (`llm/base.py`); routes get it through
+    `Depends(get_app_llm)`, tests override it with `FakeLLM` (note 0015).
 ## Tech stack
 - Python 3.11, FastAPI, Uvicorn, pydantic-settings, python-multipart
 - PostgreSQL 17 with pgvector (Docker image `pgvector/pgvector:pg17`, also in CI),
@@ -53,8 +55,9 @@ Decide per component by the cost of changing it later.
   BAAI/bge-small-en-v1.5 on the CPU. PyTorch is the CPU-only build in Docker and CI
   (installed from https://download.pytorch.org/whl/cpu before the project); a plain
   install on the Mac (note 0012)
-- Planned later: BM25, cross-encoder reranker, an LLM for answers; possibly
-  pymupdf4llm (Stage 3, compare first)
+- LLM: OpenAI gpt-4o-mini through the official `openai` client (`openai>=1.66`,
+  Responses API), chosen by the owner for the lowest cost (note 0015)
+- Planned later: BM25, cross-encoder reranker; possibly pymupdf4llm (Stage 3, compare first)
 ## Repo layout
 ```
 adaptrag/
@@ -77,11 +80,12 @@ adaptrag/
 │                                 # 0008 heading rules (Proposed), 0009 background jobs,
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
 │                                 # 0012 embedder, 0013 vector storage (pgvector),
-│                                 # 0014 dense retrieval
+│                                 # 0014 dense retrieval, 0015 answer generation
 ├── eval/
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
 ├── scripts/
+│   ├── answer.py                 # LLM answer with citations (real embedder + real LLM)
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
@@ -102,6 +106,15 @@ adaptrag/
 │   │                             # embed_chunk_set(), job outcome
 │   ├── vectorstore/
 │   │   └── pgvector.py           # embeddings_exist(), save_embeddings(), search() (all vector SQL)
+│   ├── llm/
+│   │   ├── base.py               # LLM protocol (the seam), LLMError
+│   │   ├── openai_client.py      # OpenAILLM, get_openai_llm() (cached); the only module
+│   │   │                         # importing openai
+│   │   ├── provider.py           # get_app_llm() FastAPI dependency (503 without a key)
+│   │   └── fake.py               # FakeLLM (canned reply, call count, can raise) for tests
+│   ├── answering/
+│   │   ├── prompt.py             # build_prompt(): system rules + numbered <source> tags
+│   │   └── answer.py             # answer_question(): two-layer not-found, citation mapping
 │   ├── retrieval/
 │   │   ├── results.py            # ScoredChunk (chunk + pages + score = 1 - cosine distance)
 │   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
@@ -123,7 +136,8 @@ adaptrag/
 │       ├── ready.py              # GET /ready (readiness: database reachable)
 │       ├── documents.py          # POST /documents
 │       ├── jobs.py               # GET /jobs/{id}
-│       └── query.py              # POST /documents/{id}/query
+│       ├── query.py              # POST /documents/{id}/query
+│       └── answer.py             # POST /documents/{id}/answer
 ├── tests/
 │   ├── conftest.py               # test DB URL, migrated engine, TRUNCATE all Base tables, make_client
 │   ├── test_documents.py  test_health.py  test_jobs.py  test_models.py
@@ -131,8 +145,12 @@ adaptrag/
 │   ├── test_text_chunk.py  test_fixed_chunker.py  test_chunk_storage.py
 │   ├── test_vector_store.py      # pgvector storage and search (database)
 │   ├── test_query.py             # POST /documents/{id}/query (API)
+│   ├── test_prompt.py            # answer prompt (unit)
+│   ├── test_answer.py            # answer_question (database, FakeLLM)
+│   ├── test_answer_api.py        # POST /documents/{id}/answer (API, FakeLLM)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
+│   ├── test_llm_real.py          # @pytest.mark.slow + skipped without a key: real OpenAI
 ├── .dockerignore  .env.example  .gitignore
 ├── docker-compose.yml            # api (volumes app-data, hf-cache), migrate (one-off),
 │                                 # db (pgvector/pgvector:pg17 + pgdata volume)
@@ -158,9 +176,11 @@ python scripts/list_documents.py                   # documents, status, upload f
 python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real model) for a document
 python scripts/reingest.py DOCUMENT_ID --file PATH # same, restoring a missing upload first
 python scripts/query.py DOCUMENT_ID "QUESTION" --k 5   # top-k chunks (real model)
+python scripts/answer.py DOCUMENT_ID "QUESTION" --k 5  # LLM answer + citations (needs the key)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
-python -m pytest -m slow                           # slow tests only (real model; not in CI)
+python -m pytest -m slow                           # slow tests only (real model, real LLM
+                                                   # if the key is set; not in CI; LLM costs money)
 ```
 **Owner's routine** before every commit (stops at the first failure; nothing is pushed
 unless everything passes):
@@ -188,6 +208,11 @@ once resolved to the wrong Python.
   Embedding settings: `embedding_model` (BAAI/bge-small-en-v1.5), `embedding_device`
   (cpu), `embedding_query_instruction` ("Represent this sentence for searching relevant
   passages: ", quoted in `.env` because of the trailing space).
+  LLM settings: `openai_api_key` (SecretStr, only in `.env`, empty in `.env.example`),
+  `llm_model` (gpt-4o-mini), `llm_temperature` (0.0; `None` = not sent),
+  `llm_timeout_seconds` (30), `llm_max_output_tokens` (500), `retrieval_min_score`
+  (0.55, provisional, recalibrate in Stage 4). The value `None` in an env var means
+  Python None (`env_parse_none_str`).
 - **Database URL:** one setting, `ADAPTRAG_DATABASE_URL`. Not in `alembic.ini`.
   Never log the URL (it holds the password).
 - **Endpoints that use the database are plain `def`, not `async def`** (sync SQLAlchemy).
@@ -234,6 +259,13 @@ once resolved to the wrong Python.
   document (file hash) -> chunk_set (parser version, strategy, params) ->
   chunk_embeddings.model_name; "already embedded" = rows exist for that set and model.
   Chunks and vectors are saved in one transaction.
+- **LLM:** only `llm/openai_client.py` imports openai. App code receives the LLM through
+  `Depends(get_app_llm)` (`llm/provider.py`, imports the client inside the function).
+  Normal tests never call a real LLM: `make_client` overrides it with
+  `FakeLLM(reply="Fake answer [1].")`; real calls only in `tests/test_llm_real.py`
+  (slow, skipped without a key). Never log or print the API key. SDK errors and empty
+  replies become `LLMError` (route answers 502). The model cites `[N]`; our code maps N
+  to chunks and pages, never the model.
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -282,7 +314,14 @@ Done:
   current settings" (no current chunk set, or no vectors for the embedder's model).
   200: `{document_id, chunk_set_id, model_name, results: [{chunk_id, chunk_index,
   page_start, page_end, score, text}]}`, best first, score = 1 - cosine distance.
-  No LLM and no threshold yet.
+  Retrieval only: no LLM, no threshold.
+- `POST /documents/{id}/answer` (note 0015): same body, 422, 404 and 409 as /query;
+  503 "Answering is not configured (no API key)."; 502 "The answer service is
+  unavailable. Try again later." (LLMError). 200: `{document_id, found, answer,
+  citations: [{source, chunk_id, page_start, page_end}], sources: [{source, chunk_id,
+  chunk_index, page_start, page_end, score, text}]}`. Not found ("Not found in your
+  documents.") when the top score < `retrieval_min_score` (LLM not called) or the LLM
+  replies NOT_FOUND.
 Planned: GET /documents/{id}, DELETE /documents/{id}, POST /notebooks,
 POST /notebooks/{id}/query, POST /query/compare.
 ## Data model
@@ -337,10 +376,10 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 Step 5 done (dense retrieval, exact cosine search,
-`POST /documents/{id}/query`, no LLM, no threshold). Next: Stage 2 Step 6 (LLM answer with
-page citations, "not found in your documents" with a threshold chosen from measured
-scores, injection-safe prompt).**
+**Status: Stage 2 Step 6 done (`POST /documents/{id}/answer`: gpt-4o-mini behind the LLM
+seam, numbered-source citations mapped to pages by our code, two-layer not-found with
+provisional threshold 0.55, injection-safe prompt). Next: Stage 2 Step 7 (Docker rebuild,
+end-to-end check, Stage 2 gate, docs).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,

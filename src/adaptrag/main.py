@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from adaptrag import __version__
 from adaptrag.config import get_settings
-from adaptrag.routes import documents, jobs, query, ready
+from adaptrag.routes import answer, documents, jobs, query, ready
 from adaptrag.routes.health import router as health_router
 
 
@@ -15,6 +15,7 @@ def create_app() -> FastAPI:
     app.include_router(ready.router)
     app.include_router(jobs.router)
     app.include_router(query.router)
+    app.include_router(answer.router)
 
     return app
 

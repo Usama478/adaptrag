@@ -21,6 +21,9 @@ dependencies = [
     "sentence-transformers>=6.2",
     # SQLAlchemy column type for the Postgres vector extension (note 0013).
     "pgvector>=0.3",
+    # Official OpenAI client for answers: retries, timeouts, typed responses (note 0015).
+    # 1.66 is the first release with the Responses API (client.responses.create).
+    "openai>=1.66",
 ]
 
 [project.optional-dependencies]

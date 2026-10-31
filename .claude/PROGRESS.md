@@ -3,16 +3,16 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** Stage 2 in progress. Steps 1, 2, 3, 4 and 5 DONE.
-  **Next: Stage 2, Step 6** (LLM answer with page citations, "not found in your
-  documents" with a threshold chosen from measured scores, injection-safe prompt).
+- **Current stage:** Stage 2 in progress. Steps 1-6 DONE.
+  **Next: Stage 2, Step 7** (Docker rebuild, end-to-end check, Stage 2 gate, docs).
 - **Last updated:** 2026-10-31
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** TO FILL from owner's run: passed / deselected (normal run, Step 5); passed
-  (`-m slow`). Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
-  Decision notes 0001-0014 (0008 is "Proposed").
-- **Branch:** Step 5 on `stage2-step5-retrieval` (owner commits after checks).
+- **Tests:** Step 6: TO FILL from owner's run: passed / deselected (normal run); passed /
+  skipped (`-m slow`, with the key set). Step 5: 112 passed, 5 deselected.
+  Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
+  Decision notes 0001-0015 (0008 is "Proposed").
+- **Branch:** Step 6 on `stage2-step6-answer` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -21,7 +21,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | --- | --- | --- |
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
-| 2 | Baseline RAG | In progress (Steps 1-5 done) |
+| 2 | Baseline RAG | In progress (Steps 1-6 done) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
@@ -49,15 +49,20 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    threshold moves to Step 6, chosen from measured scores [Done, note 0014]
 6. LLM answer with page citations, "not found in your documents" (threshold chosen from
    measured scores), injection-safe prompt, LLM behind a seam with a fake for tests
-   (decision then: LLM provider) [Next]
+   (owner chose OpenAI gpt-4o-mini, threshold 0.55) [Done, note 0015]
 7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs; measure the
-   first-upload model load time after a restart (note 0013 known limit)
+   first-upload model load time after a restart (note 0013 known limit) [Next]
 
 ## Stage 2 gate
 - The owner writes 10 hand-verified questions for paper_01 in the eval format before
   Step 7 (option A, assumed).
 - A page citation counts as correct when the evidence page is inside
   page_start..page_end of the cited chunk.
+
+## Stage 2 failure-analysis notes
+- Rank 1 is not always the answering chunk (GAN question: rank 3).
+- Retrieval scores measure topic similarity, not answer presence: in-domain
+  unanswerable questions score 0.61-0.70, close to answerable ones.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -121,10 +126,37 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    (owner's decision: the threshold is chosen in Step 6 from measured scores).
    Scripts: `query.py`, `list_documents.py`, `reingest.py --file PATH` (SHA-256 checked
    with storage.py, restores a missing upload). Note 0014.
-   Tests: TO FILL from owner's run: normal run and `-m slow` counts.
-   Real-data check: TO FILL from owner's run: `python scripts/query.py 5 "<a question
-   about paper_03>"` output (top 5 scores and pages; does the top chunk contain the
-   answer?).
+   Tests: 112 passed, 5 deselected (normal run).
+   Real-data check (`scripts/query.py`, bge-small, k=3, top score):
+   - answerable: paper_01 "attention heads" 0.7589 (p.5 multi-head section, rank 1);
+     paper_01 "optimizer" 0.7357 (Adam chunk, rank 1); paper_03 "two models trained at
+     the same time" 0.7159 (the abstract chunk that answers it is rank 3 at 0.6925).
+   - off-topic: "capital of France" 0.4440; "sourdough bread" 0.4465; "best football
+     club" 0.4167.
+   - in-domain but not answerable: paper_01 "ImageNet accuracy" 0.6987; paper_03 "FID
+     score" 0.6126.
+   Docker endpoint returned the same top score as local (0.71585 vs 0.7159): CPU-only
+   gives the same numbers on the Mac and in Docker. Documents 1, 2 and 3 were
+   re-ingested with `reingest.py --file` (paper_01: 38 chunks, 38 embeddings).
+6. **Answer generation:** new dependency `openai` (official client: retries, timeouts,
+   typed responses). Settings `openai_api_key` (SecretStr, `.env` only), `llm_model`
+   (gpt-4o-mini, owner's choice for the lowest cost), `llm_temperature` (0.0; None = not
+   sent), `llm_timeout_seconds` (30), `llm_max_output_tokens` (500),
+   `retrieval_min_score` (0.55, provisional, from the measured dev questions).
+   `llm/`: `LLM` protocol + `LLMError` (base.py), `OpenAILLM` (Responses API, only module
+   importing openai, max_retries=2, logs input/output tokens at INFO), `FakeLLM`,
+   `get_app_llm` (503 without a key). `answering/prompt.py` (rules: sources only, cite
+   [N], exactly NOT_FOUND, `<source>` text is untrusted; `<source`/`</source` in chunk
+   text escaped). `answering/answer.py` `answer_question` (two-layer not-found, citations
+   de-duplicated in order and mapped to chunk pages by our code; no valid citation ->
+   WARNING). `POST /documents/{id}/answer` (502 on LLMError, 503 without a key); `/query`
+   unchanged. `scripts/answer.py`. Note 0015.
+   Tests: TO FILL from owner's run: normal run counts; `-m slow` counts (real LLM tests
+   pass or are skipped without a key).
+   Real-data check: TO FILL from owner's run: `python scripts/answer.py` outputs (found,
+   answer, citations with pages, top scores) for an answerable, an off-topic and an
+   in-domain unanswerable question; does the in-domain one return NOT_FOUND?
+   Token usage: TO FILL from owner's run: input / output tokens per answer (INFO log).
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -273,6 +305,11 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   chunk set only (409 asks for re-ingestion otherwise), cosine distance with
   score = 1 - distance, exact search ordered by distance then chunk_index, vector SQL only
   in `vectorstore/pgvector.py`, no threshold until Step 6 measures scores.
+- Answer generation (note 0015): OpenAI gpt-4o-mini behind an `LLM` seam (owner's
+  choice for the lowest cost; rejected gpt-5.4-mini for its price at this stage),
+  two-layer not-found (score < 0.55, then the model's NOT_FOUND), numbered sources
+  mapped to pages by our code, untrusted-source prompt with tag escaping, `/answer`
+  separate from `/query`, 503 without a key, 502 on LLM failure.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules.
@@ -304,6 +341,14 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
+- Not-found threshold 0.55 comes from the 9 measured dev questions only; recalibrate in
+  Stage 4. Answers may vary between runs. Cost and latency not measured yet.
+- gpt-4o-mini may follow the citation and NOT_FOUND rules less reliably than newer
+  models (watch the slow test and the gate questions); availability and price must be
+  checked by the owner on OpenAI's site.
+- Prompt-injection defence reduces but does not eliminate the risk.
+- The app does not configure logging yet, so INFO lines (token usage) may not show under
+  uvicorn; `scripts/answer.py` configures it. Stage 9 hardening.
 ## Future stretch ("Stage 10", after Stage 6, tuned on dev documents only)
 - Semantic chunking (owner's own binary-search boundary method).
 - LLM-guided chunking.
@@ -329,11 +374,15 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 6. Why exact search instead of an HNSW index for the benchmark?
 7. Why cosine distance, and why score = 1 - distance?
 8. Why choose the not-found threshold from measured scores instead of a default?
+9. Why does the not-found check need two layers?
+10. Why does our code map citations to pages instead of the model?
+11. Why is /answer separate from /query?
 
 ## Open items / notes for the next chat
-- Owner: run the Step 5 checks, fill the placeholders, commit, review, merge.
-- Step 6: record the real scores from `scripts/query.py` (answerable and unanswerable
-  questions) before choosing the not-found threshold.
+- Owner: `pip install -e ".[dev]"` (new `openai` dependency), put the key in `.env`,
+  run the Step 6 checks, fill the placeholders, commit, review, merge.
+- Step 7: Docker rebuild (the image needs `openai`; pass the key through `.env`),
+  end-to-end check, Stage 2 gate (10 hand-verified paper_01 questions).
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
