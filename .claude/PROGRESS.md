@@ -8,10 +8,9 @@ Update this file at the end of every chat. Newest stage at the top of the log.
   stores).
 - **Last updated:** 2026-10-31
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (Postgres service in CI).
-- **Tests:** TO FILL from owner's run: pytest count line of `python -m pytest` (normal)
-  and of `python -m pytest -m slow`. Decision notes 0001-0012 (0008 is "Proposed").
-- **Branch:** Step 3 on `stage2-step3-embedder` (Part A "Tidy agent guide paths" committed;
-  Step 3 files not committed yet; not pushed).
+- **Tests:** 76 passed, 5 deselected (normal run); 5 passed (`-m slow`).
+  Decision notes 0001-0012 (0008 is "Proposed").
+- **Branch:** Step 3 committed as d4fab08 on `stage2-step3-embedder`; fix-ups in progress.
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -40,7 +39,8 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 3. Embedder seam with sentence-transformers BAAI/bge-small-en-v1.5 + measure real token
    counts of chunks [Done, note 0012]
 4. Chroma vector store + embedding cache key (file hash + parser version + strategy and
-   params + model name); ingest embeds and stores; "ready to query" document status [Next]
+   params + model name); ingest embeds and stores; "ready to query" document status;
+   log a warning and count chunks over max_tokens per document [Next]
 5. Dense retrieval + `POST /documents/{id}/query` returning top chunks with pages and
    scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a guess
 6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
@@ -74,9 +74,12 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    Settings `embedding_model`, `embedding_device`, `embedding_query_instruction`. Queries get
    the bge instruction prefix, chunks don't; vectors normalised. Real-model tests marked
    `slow` (excluded by default, not in CI). `scripts/token_stats.py`. Note 0012.
-   Token measurement (fixed-size 200/40, data/samples): TO FILL from owner's run: OVERALL
-   line of `python scripts/token_stats.py data/samples`.
-   api image size: TO FILL from owner's run: `docker images` SIZE for `adaptrag-api`.
+   Token measurement (fixed-size 200/40, data/samples):
+   `OVERALL: 213 chunks, tokens min 73 / median 313 / max 654, 3 over 512`
+   (paper_03: 1, paper_05: 2). Owner chose option A: keep 200/40, record the overflow as
+   a known limit, Step 4 ingest warns and counts chunks over max_tokens.
+   `--show-over` flag lists the chunks over the limit.
+   api image: 2.33 GB on disk, 523 MB content size; `torch 2.15.0+cpu`, no CUDA.
    Part A: `.claude/claude.md` renamed to `.claude/CLAUDE.md`; CONTEXT_HANDOFF.md
    references removed.
 
@@ -194,6 +197,8 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   real embedder made the normal run import torch, so it moved inside a function in
   `tests/test_embedder_real.py`.
 - `.env` values with a trailing space must be quoted (`embedding_query_instruction`).
+- Appending to a file without a final newline glued two lines together (.env.example).
+  Check the last line before appending.
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -228,7 +233,7 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - `database_url` has a code default; make config required with a startup check (Stage 9).
 - The race-condition branch in `POST /documents` has no automated test.
 - Whole upload read into memory (fine at 20 MB).
-- `StarletteDeprecationWarning` about httpx in tests: look into separately.
+- 3 of 213 sample chunks exceed 512 tokens and are truncated by the model (note 0012).
 - Dev database documents 1 and 2 were uploaded before jobs existed (no job, status uploaded).
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
@@ -256,9 +261,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 4. Why does the query get an instruction prefix but the chunks don't?
 
 ## Open items / notes for the next chat
-- Owner: run the Step 3 checks, fill the `TO FILL` placeholders here and in note 0012,
-  commit "Add Embedder seam with bge-small and token measurement", review, merge.
-- Step 4 must decide: how the model reaches the Docker container (bake into the image or
-  cache volume), and whether chunks over 512 tokens need a token cap.
+- Owner: run the checks for the Step 3 fix-ups, commit them, review, merge.
+- Step 4 must decide how the model reaches the Docker container (bake it into the image
+  or use a cache volume).
+- Chunks over 512 tokens: decided, option A (note 0012).
 - Documents ingested before Step 2 have no chunks (duplicates are not re-processed).
 - Update this file at the end of the chat.

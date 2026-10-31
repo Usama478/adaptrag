@@ -130,6 +130,7 @@ python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for on
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
 python scripts/list_chunk_sets.py                  # stored chunk sets and chunk counts
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
+python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model; not in CI)
 ```
 **Owner's routine** before every commit (stops at the first failure; nothing is pushed

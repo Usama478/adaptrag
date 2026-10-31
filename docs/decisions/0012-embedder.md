@@ -46,15 +46,36 @@ yet, and ingestion does not call the embedder yet (Step 4).
   them. CI never runs them and never downloads the model.
 - **Measurement.** `scripts/token_stats.py FOLDER` chunks every PDF with the
   `chunk_fixed_size` defaults (200/40 words) and counts tokens per chunk with the real
-  tokenizer, without truncation.
+  tokenizer, without truncation. `--show-over` also lists each chunk over max_tokens
+  (index, pages, token count, first 200 characters).
+- **Chunks over the token limit (owner's choice, option A).** Keep the fixed-size
+  defaults at 200/40 words unchanged, so the control strategy stays fixed. Record the
+  overflow as a measured known limit. In Step 4, ingest logs a warning and counts the
+  chunks over max_tokens per document.
 
 ## Measurement (data/samples, fixed-size 200/40)
-TO FILL from owner's run: full output of `python scripts/token_stats.py data/samples`
-(one line per PDF with chunks, min / median / max tokens and chunks over max_tokens,
-then the OVERALL line).
+Exact output of `python scripts/token_stats.py data/samples`:
+```
+model BAAI/bge-small-en-v1.5, max_tokens 512
+paper_01_single_column.pdf: 38 chunks, tokens min 211 / median 299.5 / max 442, 0 over 512
+paper_02_two_column.pdf: 62 chunks, tokens min 73 / median 319.5 / max 474, 0 over 512
+paper_03_single_column_b.pdf: 29 chunks, tokens min 195 / median 305 / max 517, 1 over 512
+paper_04_table_heavy.pdf: 64 chunks, tokens min 98 / median 322.0 / max 448, 0 over 512
+paper_05_short.pdf: 20 chunks, tokens min 235 / median 272.5 / max 654, 2 over 512
+OVERALL: 213 chunks, tokens min 73 / median 313 / max 654, 3 over 512
+```
 
-What it means: TO FILL from owner's run: how many chunks exceed 512 tokens and in which
-papers. Text past 512 tokens is cut off silently by the model and never embedded.
+What it means: 3 of 213 chunks (1.4%) exceed 512 tokens (paper_03: 1, paper_05: 2;
+the worst is 654 tokens, about 3.3 tokens per word on dense IEEE pages). The model
+silently ignores text past 512 tokens, so the end of those chunks is stored but not
+embedded. Note 0010 argued that 200 words would fit; the measurement shows it does for
+98.6% of chunks, not all.
+
+Slow tests (`python -m pytest -m slow`): 5 passed.
+
+Docker: `adaptrag-api` is 2.33 GB on disk, 523 MB content size. Verified inside the
+image: `torch 2.15.0+cpu`, `torch.cuda.is_available()` is False, and no nvidia/cuda
+packages are installed.
 
 ## Rejected
 - **Default PyTorch build in Docker/CI:** on Linux x86_64 it pulls in CUDA/GPU
@@ -73,10 +94,16 @@ papers. Text past 512 tokens is cut off silently by the model and never embedded
 - **numpy arrays in the interface for now:** would make every caller depend on numpy
   types. Lists are enough for Chroma (Step 4); revisit if conversion cost shows up in a
   measurement.
+- **B: a smaller chunk size for the overflow:** changes a benchmark decision after
+  seeing data, and at 3.3 tokens per word even 150 words is not guaranteed to fit.
+- **C: splitting chunks over the token limit:** ties the chunker to the model's
+  tokenizer, which note 0010 rejected.
 
 ## Known limits
-- Chunks over 512 tokens are truncated by the model (see Measurement). The chunker
-  still counts words; whether to cap chunks by tokens is a Step 4 or Stage 3 question.
+- 3 of 213 sample chunks (1.4%) exceed 512 tokens; the model ignores the text past
+  512 tokens, so the end of those chunks is not embedded. Kept on purpose (option A):
+  the 200/40 control stays fixed, and from Step 4 ingest warns about and counts these
+  chunks per document.
 - The model is downloaded from Hugging Face on first use (into the user's cache). The
   Docker image does not contain it yet; Step 4 decides whether to bake it in or mount
   a cache volume.
@@ -85,5 +112,5 @@ papers. Text past 512 tokens is cut off silently by the model and never embedded
 - The Hugging Face tokenizer prints a "longer than the specified maximum sequence
   length" warning when `count_tokens` sees a long text. It is expected (we count
   without truncating on purpose) and harmless.
-- api Docker image size with CPU torch: TO FILL from owner's run: SIZE column for
-  `adaptrag-api` in `docker images`.
+- The api image is 2.33 GB on disk (523 MB content size) with CPU-only torch, and it
+  does not include the model yet.
