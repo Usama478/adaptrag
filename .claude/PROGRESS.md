@@ -47,7 +47,8 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    guess [Next]
 6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
    LLM behind a seam with a fake for tests (decision then: LLM provider)
-7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs
+7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs; measure the
+   first-upload model load time after a restart (note 0013 known limit)
 
 ## Stage 2 gate
 - The owner writes 10 hand-verified questions for paper_01 in the eval format before

@@ -81,8 +81,8 @@ nothing else should.
 - A model with a different number of dimensions needs a new migration (new column or
   new table).
 - The first upload after a restart loads the model during the request, because the
-  dependency runs before the endpoint (time: TO FILL from owner's run: seconds for the
-  first upload after a restart). Any `POST /documents` triggers the load, even one
+  dependency runs before the endpoint (time: not measured yet; to be measured in the
+  Stage 2 Step 7 Docker check). Any `POST /documents` triggers the load, even one
   that is then rejected or is a duplicate.
 - The model is downloaded from Hugging Face on first use into the `hf-cache` volume;
   the first upload in a fresh Docker setup needs network access.
