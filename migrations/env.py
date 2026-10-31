@@ -1,6 +1,7 @@
 from logging.config import fileConfig
 
 from alembic import context
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import create_engine
 
 from adaptrag.config import get_settings
@@ -38,6 +39,10 @@ def run_migrations_online() -> None:
     """Connect to the database and apply the migrations."""
     engine = create_engine(get_database_url())
     with engine.connect() as connection:
+        # Teach the reflection step the "vector" type (pgvector's documented approach).
+        # Without it, `alembic check` reads the column as an unknown type and reports
+        # a false difference from the model.
+        connection.dialect.ischema_names["vector"] = Vector
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()

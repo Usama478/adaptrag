@@ -1,9 +1,14 @@
 from datetime import datetime
 from typing import Any
 
+from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
 from sqlalchemy import DateTime, ForeignKey, MetaData, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# Length of every stored vector: BAAI/bge-small-en-v1.5 returns 384 numbers (note 0013).
+# A model with a different size needs a new migration.
+EMBEDDING_DIMENSION = 384
 
 NAMING_CONVENTION = {
     "ix": "ix_%(column_0_label)s",
@@ -73,3 +78,21 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text)
     page_start: Mapped[int]
     page_end: Mapped[int]
+
+
+class ChunkEmbedding(Base):
+    """The vector of one chunk, made by one embedding model.
+
+    The primary key (chunk_id, model_name) allows one vector per chunk per model, so a
+    second model can be stored next to the first without overwriting it.
+    """
+
+    __tablename__ = "chunk_embeddings"
+
+    chunk_id: Mapped[int] = mapped_column(
+        ForeignKey("chunks.id", ondelete="CASCADE"), primary_key=True
+    )
+    model_name: Mapped[str] = mapped_column(String(200), primary_key=True)
+    # Written as a list of floats; pgvector reads it back as a numpy array, hence Any.
+    # nullable=False is explicit because `Any` does not tell SQLAlchemy whether None is allowed.
+    embedding: Mapped[Any] = mapped_column(Vector(EMBEDDING_DIMENSION), nullable=False)

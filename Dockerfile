@@ -16,9 +16,13 @@ COPY alembic.ini ./
 COPY migrations ./migrations
 RUN pip install --no-cache-dir .
 
+# Both folders are mount points for named volumes (docker-compose.yml): uploads and the
+# Hugging Face model cache. They must exist and belong to appuser BEFORE a volume is
+# mounted, because a new named volume copies the ownership of the image's folder.
+# Otherwise the volume is owned by root and appuser cannot write to it (note 0013).
 RUN useradd --create-home appuser \
-    && mkdir -p /app/data \
-    && chown appuser /app/data
+    && mkdir -p /app/data /app/.cache/huggingface \
+    && chown -R appuser:appuser /app/data /app/.cache
 USER appuser
 
 EXPOSE 8000

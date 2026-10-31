@@ -3,14 +3,14 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** Stage 2 in progress. Steps 1, 2 and 3 DONE.
-  **Next: Stage 2, Step 4** (Chroma vector store + embedding cache key; ingest embeds and
-  stores).
+- **Current stage:** Stage 2 in progress. Steps 1, 2, 3 and 4 DONE.
+  **Next: Stage 2, Step 5** (dense retrieval + `POST /documents/{id}/query`, no LLM).
 - **Last updated:** 2026-10-31
-- **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (Postgres service in CI).
-- **Tests:** 76 passed, 5 deselected (normal run); 5 passed (`-m slow`).
-  Decision notes 0001-0012 (0008 is "Proposed").
-- **Branch:** Step 3 committed as d4fab08 on `stage2-step3-embedder`; fix-ups in progress.
+- **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
+  service in CI from Step 4).
+- **Tests:** TO FILL from owner's run: passed / deselected (normal run); passed (`-m slow`).
+  Decision notes 0001-0013 (0008 is "Proposed").
+- **Branch:** Step 4 on `stage2-step4-vectors` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -19,7 +19,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | --- | --- | --- |
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
-| 2 | Baseline RAG | In progress (Steps 1-3 done) |
+| 2 | Baseline RAG | In progress (Steps 1-4 done) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
@@ -38,11 +38,13 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 2. `chunk_sets` + `chunks` tables, chunks saved during ingestion [Done, note 0011]
 3. Embedder seam with sentence-transformers BAAI/bge-small-en-v1.5 + measure real token
    counts of chunks [Done, note 0012]
-4. Chroma vector store + embedding cache key (file hash + parser version + strategy and
-   params + model name); ingest embeds and stores; "ready to query" document status;
-   log a warning and count chunks over max_tokens per document [Next]
-5. Dense retrieval + `POST /documents/{id}/query` returning top chunks with pages and
-   scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a guess
+4. Vector storage with pgvector in Postgres (changed from Chroma, owner's decision) +
+   embedding cache key (file hash + parser version + strategy and params + model name);
+   ingest embeds and stores; "ready" document status; log a warning and count chunks
+   over max_tokens per document [Done, note 0013]
+5. Dense retrieval (exact search) + `POST /documents/{id}/query` returning top chunks with
+   pages and scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a
+   guess [Next]
 6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
    LLM behind a seam with a fake for tests (decision then: LLM provider)
 7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs
@@ -82,6 +84,24 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    api image: 2.33 GB on disk, 523 MB content size; `torch 2.15.0+cpu`, no CUDA.
    Part A: `.claude/claude.md` renamed to `.claude/CLAUDE.md`; CONTEXT_HANDOFF.md
    references removed.
+4. **Vector storage (pgvector):** owner chose pgvector in Postgres instead of Chroma
+   (chunks and vectors in one transaction, cascade delete, Alembic schema, one tool
+   fewer). New dependency `pgvector`; Postgres image `pgvector/pgvector:pg17` in compose
+   and CI. `ChunkEmbedding` (`chunk_embeddings`: chunk_id FK CASCADE, model_name,
+   vector(384); PK chunk_id + model_name). Hand-written migration 5c8e1a7d4f2b (creates
+   the `vector` extension); `migrations/env.py` registers "vector" for reflection.
+   `vectorstore/pgvector.py`: `embeddings_exist`, `save_embeddings` (length and
+   dimension checks). Structural cache key: document -> chunk set -> model name.
+   `save_chunk_set` returns `(chunk_set_id, created)`. `run_ingest_job` takes an
+   `embedder`, warns about chunks over max_tokens, embeds and saves in the same
+   transaction; success status is now "ready". `embedding/provider.py`
+   `get_app_embedder` (lazy torch import); tests override it with
+   `FakeEmbedder(dimension=384)` (FakeEmbedder now supports any dimension).
+   Docker: volumes `app-data` (/app/data) and `hf-cache` (/app/.cache/huggingface,
+   `HF_HOME`). `scripts/reingest.py`; `list_chunk_sets.py` prints embedding counts.
+   Note 0013. Tests: TO FILL from owner's run: normal run and `-m slow` counts.
+   Real-data check: TO FILL from owner's run: `list_chunk_sets.py` line for the
+   re-ingested document (chunks = embeddings?).
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -217,8 +237,10 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Embedder seam with bge-small on CPU, CPU-only torch in Docker/CI, query instruction on
   queries only, normalised vectors, model loaded once per process; real-model tests are
   `slow` and not run in CI (note 0012).
-- Chroma for vectors (decided, not installed yet). Modular routers. `src/` layout;
-  Python 3.11; strict mypy.
+- pgvector in Postgres for vectors instead of Chroma (owner's decision, note 0013):
+  exact search, no ANN index, fixed 384 dimensions, structural cache key, embedder via
+  a FastAPI dependency, "ready" document status, Docker volumes for uploads and the
+  model cache. Modular routers. `src/` layout; Python 3.11; strict mypy.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules.
@@ -229,12 +251,18 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Errors while reading individual pages (after opening) are not turned into ParseError.
 - Jobs: a restart mid-job leaves it "running" (Stage 9: mark stale jobs failed on
   startup); no retries; jobs run inside the API process.
-- Uploaded files in Docker are not on a volume yet (lost when the container is removed).
 - `database_url` has a code default; make config required with a startup check (Stage 9).
 - The race-condition branch in `POST /documents` has no automated test.
 - Whole upload read into memory (fine at 20 MB).
 - 3 of 213 sample chunks exceed 512 tokens and are truncated by the model (note 0012).
 - Dev database documents 1 and 2 were uploaded before jobs existed (no job, status uploaded).
+- A model with a different number of dimensions needs a migration (vector(384), note 0013).
+- The first upload after a restart loads the model during the request (seconds; the
+  dependency runs before the endpoint, even for rejected or duplicate uploads).
+- The model downloads from Hugging Face on first use into the `hf-cache` volume (first
+  upload in a fresh Docker setup needs network access).
+- Exact search reads every vector: fine only at small scale (a few hundred chunks).
+- Documents ingested before Step 4 have no embeddings until `scripts/reingest.py` runs.
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
@@ -259,11 +287,13 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 3. Why does `run_ingest_job` call `session.rollback()` before recording a failure, and
    what would be saved without it?
 4. Why does the query get an instruction prefix but the chunks don't?
+5. Why pgvector instead of Chroma once we chose Postgres?
+6. Why exact search instead of an HNSW index for the benchmark?
 
 ## Open items / notes for the next chat
-- Owner: run the checks for the Step 3 fix-ups, commit them, review, merge.
-- Step 4 must decide how the model reaches the Docker container (bake it into the image
-  or use a cache volume).
-- Chunks over 512 tokens: decided, option A (note 0012).
-- Documents ingested before Step 2 have no chunks (duplicates are not re-processed).
+- Owner: run the Step 4 checks, fill the placeholders, commit, review, merge.
+- Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
+  option.
+- Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
+- Documents ingested before Step 2/4 lack chunks or embeddings; use `scripts/reingest.py`.
 - Update this file at the end of the chat.

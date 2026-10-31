@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from adaptrag.config import Settings, get_settings
 from adaptrag.db import get_engine, get_session
+from adaptrag.embedding.base import Embedder
+from adaptrag.embedding.provider import get_app_embedder
 from adaptrag.ingest import run_ingest_job
 from adaptrag.models import Document, Job
 from adaptrag.storage import compute_sha256, save_upload
@@ -49,6 +51,7 @@ def upload_document(
     background_tasks: BackgroundTasks,
     settings: Annotated[Settings, Depends(get_settings)],
     session: Annotated[Session, Depends(get_session)],
+    embedder: Annotated[Embedder, Depends(get_app_embedder)],
 ) -> DocumentResponse:
     filename = file.filename or ""
     if not filename.lower().endswith(".pdf"):
@@ -93,5 +96,5 @@ def upload_document(
     session.commit()  # document and job are saved together, or not at all
 
     engine = get_engine(settings.database_url)
-    background_tasks.add_task(run_ingest_job, engine, upload_dir, job.id)
+    background_tasks.add_task(run_ingest_job, engine, upload_dir, job.id, embedder)
     return document_response(document, job.id, duplicate=False)

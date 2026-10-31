@@ -29,26 +29,30 @@ def count(session: Session, model: type[Base]) -> int:
     return session.scalar(select(func.count()).select_from(model)) or 0
 
 
-def save(session: Session, document_id: int, params: dict[str, Any]) -> bool:
+def save(session: Session, document_id: int, params: dict[str, Any]) -> tuple[int, bool]:
     return save_chunk_set(session, document_id, "fixed_size", params, "0.1.0", TWO_CHUNKS)
 
 
 def test_chunks_are_stored_in_order(db_engine: Engine) -> None:
     with Session(db_engine) as session:
         document_id = add_document(session)
-        assert save(session, document_id, PARAMS) is True
+        chunk_set_id, created = save(session, document_id, PARAMS)
+        assert created is True
         session.commit()
 
         chunks = session.scalars(select(Chunk).order_by(Chunk.chunk_index)).all()
         assert [c.text for c in chunks] == ["first chunk", "second chunk"]
         assert [(c.page_start, c.page_end) for c in chunks] == [(1, 1), (1, 2)]
+        assert all(c.chunk_set_id == chunk_set_id for c in chunks)
 
 
 def test_identical_chunk_set_is_skipped(db_engine: Engine) -> None:
     with Session(db_engine) as session:
         document_id = add_document(session)
-        save(session, document_id, PARAMS)
-        assert save(session, document_id, PARAMS) is False
+        first_id, _ = save(session, document_id, PARAMS)
+        second_id, created = save(session, document_id, PARAMS)
+        assert created is False
+        assert second_id == first_id  # the existing set's id comes back
         session.commit()
 
         assert count(session, ChunkSet) == 1
@@ -58,8 +62,10 @@ def test_identical_chunk_set_is_skipped(db_engine: Engine) -> None:
 def test_different_params_make_a_second_set(db_engine: Engine) -> None:
     with Session(db_engine) as session:
         document_id = add_document(session)
-        save(session, document_id, PARAMS)
-        assert save(session, document_id, {"size_words": 100, "overlap_words": 20}) is True
+        first_id, _ = save(session, document_id, PARAMS)
+        second_id, created = save(session, document_id, {"size_words": 100, "overlap_words": 20})
+        assert created is True
+        assert second_id != first_id
         session.commit()
 
         assert count(session, ChunkSet) == 2

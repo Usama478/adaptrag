@@ -7,6 +7,12 @@ services:
       - .env
     environment:
       ADAPTRAG_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # The model is downloaded on first use into this folder (the hf-cache volume),
+      # so it survives container restarts and rebuilds (note 0013).
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - app-data:/app/data
+      - hf-cache:/app/.cache/huggingface
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -23,7 +29,8 @@ services:
         condition: service_healthy
 
   db:
-    image: postgres:17
+    # Postgres 17 with the pgvector extension installed (note 0013).
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -41,3 +48,5 @@ services:
 
 volumes:
   pgdata:
+  app-data:
+  hf-cache:

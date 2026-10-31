@@ -1,6 +1,7 @@
 # 0011: Chunk storage
 
 Status: Accepted
+Update: vectors are stored with pgvector in Postgres, not Chroma (note 0013).
 Date: 2026-10-31
 
 ## Context

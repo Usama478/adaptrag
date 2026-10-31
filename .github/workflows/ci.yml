@@ -10,7 +10,8 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        # Postgres 17 with the pgvector extension installed (note 0013).
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_USER: adaptrag
           POSTGRES_PASSWORD: ci-password

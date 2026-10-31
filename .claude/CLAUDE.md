@@ -29,16 +29,22 @@ Decide per component by the cost of changing it later.
 - Do properly now (cheap now, expensive later): PostgreSQL, Alembic migrations.
 - Simple for the MVP, behind a seam for later upgrade:
   - Background jobs: FastAPI BackgroundTasks now; a Redis-backed queue later.
-    Job logic lives in the plain function `ingest.run_ingest_job(engine, upload_dir, job_id)`.
+    Job logic lives in the plain function
+    `ingest.run_ingest_job(engine, upload_dir, job_id, embedder)`.
   - File storage: local disk now (`data/uploads/`); S3-style object storage later.
     All file paths go through `storage.py` (`upload_path()`, `save_upload()`).
   - PDF library: only `parsing/pdf.py` imports PyMuPDF; everything else reads
     `ParsedBlock` / `ParsedDocument`.
-  - Vector store: Chroma in-process now; Chroma server later (client config change).
+  - Vector store: pgvector in the same Postgres (table `chunk_embeddings`, exact search,
+    no ANN index). Only `vectorstore/pgvector.py` reads and writes vectors; an HNSW index
+    or another store later stays behind it (note 0013).
+  - Embedding model: code receives an `Embedder` (`embedding/base.py`); routes get it
+    through `Depends(get_app_embedder)`, tests override it with `FakeEmbedder`.
 ## Tech stack
 - Python 3.11, FastAPI, Uvicorn, pydantic-settings, python-multipart
-- PostgreSQL 17 (Docker), SQLAlchemy 2.0 (sync, typed `Mapped` style),
-  psycopg 3 (`psycopg[binary]`), Alembic (migrations)
+- PostgreSQL 17 with pgvector (Docker image `pgvector/pgvector:pg17`, also in CI),
+  SQLAlchemy 2.0 (sync, typed `Mapped` style), psycopg 3 (`psycopg[binary]`),
+  Alembic (migrations), `pgvector` (SQLAlchemy `Vector` column type; note 0013)
 - PyMuPDF (`pymupdf>=1.24`, currently 2.0) for PDF parsing (AGPL; fine for this public repo)
 - Tests: pytest (TestClient), against a real Postgres test database
 - Lint/format: ruff. Types: mypy (strict, `files = src`)
@@ -47,7 +53,7 @@ Decide per component by the cost of changing it later.
   BAAI/bge-small-en-v1.5 on the CPU. PyTorch is the CPU-only build in Docker and CI
   (installed from https://download.pytorch.org/whl/cpu before the project); a plain
   install on the Mac (note 0012)
-- Planned later: Chroma, BM25, cross-encoder reranker, an LLM for answers; possibly
+- Planned later: BM25, cross-encoder reranker, an LLM for answers; possibly
   pymupdf4llm (Stage 3, compare first)
 ## Repo layout
 ```
@@ -58,17 +64,19 @@ adaptrag/
 ├── .github/workflows/ci.yml      # lint, format, mypy, migrations, alembic check, tests
 ├── alembic.ini                   # NO database URL here (env.py reads settings)
 ├── migrations/
-│   ├── env.py                    # URL from settings, or config.attributes (tests)
+│   ├── env.py                    # URL from settings, or config.attributes (tests);
+│   │                             # registers the "vector" type for reflection
 │   ├── script.py.mako            # migration template (modern typing, sorted imports)
 │   └── versions/                 # 2eded5ee7afc documents, 1b7cc351503c jobs + page_count,
-│                                 # 3b2dd0114f3e chunk_sets + chunks
+│                                 # 3b2dd0114f3e chunk_sets + chunks,
+│                                 # 5c8e1a7d4f2b vector extension + chunk_embeddings
 ├── docker/postgres/init/01-create-test-db.sql   # creates adaptrag_test on first init
 ├── docs/decisions/               # 0001 stack, 0002 upload validation, 0003 hashing/storage,
 │                                 # 0004 Postgres/SQLAlchemy/Alembic, 0005 parsed block shape,
 │                                 # 0006 PDF library, 0007 reading order,
 │                                 # 0008 heading rules (Proposed), 0009 background jobs,
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
-│                                 # 0012 embedder
+│                                 # 0012 embedder, 0013 vector storage (pgvector)
 ├── eval/
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
@@ -76,15 +84,20 @@ adaptrag/
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
-│   ├── list_chunk_sets.py        # one line per stored chunk set with its chunk count
+│   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
+│   ├── reingest.py               # new job for an existing document, real embedder
 │   └── token_stats.py            # real model token counts of fixed-size chunks, per PDF
 ├── src/adaptrag/
 │   ├── __init__.py               # __version__
 │   ├── config.py                 # Settings (env prefix ADAPTRAG_), get_settings()
 │   ├── db.py                     # get_engine(url) (cached), get_session() dependency
-│   ├── models.py                 # Base (naming convention), Document, Job, ChunkSet, Chunk
+│   ├── models.py                 # Base (naming convention), Document, Job, ChunkSet, Chunk,
+│   │                             # ChunkEmbedding, EMBEDDING_DIMENSION (384)
 │   ├── storage.py                # compute_sha256(), upload_path(), save_upload()
-│   ├── ingest.py                 # run_ingest_job(): parse, chunk, save_chunk_set(), job outcome
+│   ├── ingest.py                 # run_ingest_job(): parse, chunk, save_chunk_set(),
+│   │                             # embed_chunk_set(), job outcome
+│   ├── vectorstore/
+│   │   └── pgvector.py           # embeddings_exist(), save_embeddings() (search: Step 5)
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
 │   │   └── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
@@ -92,7 +105,8 @@ adaptrag/
 │   │   ├── base.py               # Embedder protocol (the seam)
 │   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached);
 │   │   │                         # the only module importing sentence_transformers / torch
-│   │   └── fake.py               # FakeEmbedder (hash-based, no model) for tests
+│   │   ├── provider.py           # get_app_embedder() FastAPI dependency (lazy torch import)
+│   │   └── fake.py               # FakeEmbedder (hash-based, any dimension) for tests
 │   ├── parsing/
 │   │   ├── blocks.py             # BlockType, ParsedBlock, ParsedDocument
 │   │   └── pdf.py                # parse_pdf(), clean_text(), ParseError family, PARSER_VERSION
@@ -107,10 +121,12 @@ adaptrag/
 │   ├── test_documents.py  test_health.py  test_jobs.py  test_models.py
 │   ├── test_parsed_blocks.py  test_pdf_parser.py  test_ready.py  test_storage.py
 │   ├── test_text_chunk.py  test_fixed_chunker.py  test_chunk_storage.py
+│   ├── test_vector_store.py      # pgvector storage (database)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 ├── .dockerignore  .env.example  .gitignore
-├── docker-compose.yml            # api, migrate (one-off), db (Postgres + volume)
+├── docker-compose.yml            # api (volumes app-data, hf-cache), migrate (one-off),
+│                                 # db (pgvector/pgvector:pg17 + pgdata volume)
 ├── Dockerfile  pyproject.toml  README.md
 ```
 `.env`, `data/` (sample PDFs, uploads) are gitignored.
@@ -128,7 +144,8 @@ docker compose down                                # stop (NEVER add -v unless y
 python scripts/check_pdfs.py data/samples          # parse every sample PDF
 python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for one page
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
-python scripts/list_chunk_sets.py                  # stored chunk sets and chunk counts
+python scripts/list_chunk_sets.py                  # stored chunk sets, chunk and embedding counts
+python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real model) for a document
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model; not in CI)
@@ -195,6 +212,16 @@ once resolved to the wrong Python.
   or torch. Device is always `cpu`. Vectors are normalised. Queries get
   `embedding_query_instruction` as a prefix; chunks are embedded as plain text. Get the
   model through `get_embedder()` (loaded once per process), never construct it per call.
+  App code receives the embedder through `Depends(get_app_embedder)`
+  (`embedding/provider.py`, imports the real embedder inside the function) and passes it
+  on; `run_ingest_job` takes it as a parameter.
+- **Vectors (pgvector):** `pgvector` is imported only in `models.py` (column type),
+  `vectorstore/pgvector.py`, and on the migration side (`migrations/env.py`, migration
+  files). Vectors have `EMBEDDING_DIMENSION` (384) numbers; a different size needs a
+  migration. Exact search, no ANN index (note 0013). Embedding cache key is structural:
+  document (file hash) -> chunk_set (parser version, strategy, params) ->
+  chunk_embeddings.model_name; "already embedded" = rows exist for that set and model.
+  Chunks and vectors are saved in one transaction.
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -242,14 +269,17 @@ POST /notebooks/{id}/query, POST /query/compare.
 ## Data model
 Done:
 - Document: id, file_hash (unique), filename, size_bytes, status
-  (uploaded / parsed / failed), page_count (nullable), created_at
+  (uploaded / ready / failed; "ready" = parsed, chunked and embedded), page_count
+  (nullable), created_at. Rows made before Step 4 may still say "parsed".
 - Job: id, document_id (FK, ON DELETE CASCADE), status (queued / running /
   succeeded / failed), error (nullable), created_at, finished_at (nullable)
 - ChunkSet: id, document_id (FK, ON DELETE CASCADE), strategy, params (JSONB),
   parser_version, created_at; unique on (document_id, strategy, params, parser_version)
 - Chunk: id, chunk_set_id (FK, ON DELETE CASCADE), chunk_index, text, page_start,
-  page_end; unique on (chunk_set_id, chunk_index). Postgres holds chunk text; Chroma
-  will hold vectors keyed by chunk id (note 0011)
+  page_end; unique on (chunk_set_id, chunk_index). Postgres holds chunk text (note 0011)
+- ChunkEmbedding (`chunk_embeddings`): chunk_id (FK chunks.id, ON DELETE CASCADE),
+  model_name String(200), embedding vector(384); primary key (chunk_id, model_name)
+  (note 0013)
 Add columns only when they can be filled: title (parser), profile, strategy,
 reason (router). Planned: Notebook, QueryLog.
 ## Strategy interface (Stage 3)
@@ -288,8 +318,8 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 Step 3 done (Embedder seam, bge-small, token measurement). Next: Stage 2
-Step 4 (Chroma vector store + embedding cache key; ingest embeds and stores).**
+**Status: Stage 2 Step 4 done (pgvector storage, structural cache key, ingest embeds and
+stores, status "ready"). Next: Stage 2 Step 5 (dense retrieval + `POST /documents/{id}/query`).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,

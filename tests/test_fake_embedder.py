@@ -26,12 +26,22 @@ def test_different_texts_give_different_vectors() -> None:
     assert first != second
 
 
-def test_vectors_have_declared_dimension_and_unit_length() -> None:
-    embedder = FakeEmbedder(dimension=8)
+@pytest.mark.parametrize("dimension", [1, 8, 32, 33, 384])
+def test_vectors_have_declared_dimension_and_unit_length(dimension: int) -> None:
+    # 33 and 384 need more than one SHA-256 digest (32 bytes each).
+    embedder = FakeEmbedder(dimension=dimension)
     vectors = embedder.embed_passages(["a", "b c", "d e f"]) + [embedder.embed_query("q")]
     for vector in vectors:
-        assert len(vector) == embedder.dimension == 8
+        assert len(vector) == embedder.dimension == dimension
         assert length(vector) == pytest.approx(1.0)
+
+
+def test_large_dimension_is_deterministic_and_text_dependent() -> None:
+    first, second = FakeEmbedder(dimension=384).embed_passages(["hello", "goodbye"])
+    assert first == FakeEmbedder(dimension=384).embed_passages(["hello"])[0]
+    assert first != second
+    # The extra digests are not copies of the first one.
+    assert first[32:64] != first[0:32]
 
 
 def test_embed_passages_keeps_input_order() -> None:
@@ -56,7 +66,7 @@ def test_count_tokens_is_words_plus_two() -> None:
     assert FakeEmbedder().count_tokens("three little words") == 5
 
 
-@pytest.mark.parametrize("dimension", [0, 33])
-def test_dimension_out_of_range_is_rejected(dimension: int) -> None:
+@pytest.mark.parametrize("dimension", [0, -1])
+def test_dimension_below_one_is_rejected(dimension: int) -> None:
     with pytest.raises(ValueError):
         FakeEmbedder(dimension=dimension)
