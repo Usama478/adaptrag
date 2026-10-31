@@ -5,6 +5,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# CPU-only PyTorch first, so installing sentence-transformers does not pull the
+# default build with GPU/CUDA libraries we never use (note 0012).
+# Its own layer, before the code is copied, so code changes do not reinstall it.
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY alembic.ini ./

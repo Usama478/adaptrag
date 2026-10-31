@@ -43,8 +43,12 @@ Decide per component by the cost of changing it later.
 - Tests: pytest (TestClient), against a real Postgres test database
 - Lint/format: ruff. Types: mypy (strict, `files = src`)
 - Container: Docker + docker compose. CI: GitHub Actions with a Postgres service
-- Planned later: sentence-transformers (embeddings), Chroma, BM25, cross-encoder
-  reranker, an LLM for answers; possibly pymupdf4llm (Stage 3, compare first)
+- Embeddings: sentence-transformers (`sentence-transformers>=6.2`) with
+  BAAI/bge-small-en-v1.5 on the CPU. PyTorch is the CPU-only build in Docker and CI
+  (installed from https://download.pytorch.org/whl/cpu before the project); a plain
+  install on the Mac (note 0012)
+- Planned later: Chroma, BM25, cross-encoder reranker, an LLM for answers; possibly
+  pymupdf4llm (Stage 3, compare first)
 ## Repo layout
 ```
 adaptrag/
@@ -63,7 +67,8 @@ adaptrag/
 │                                 # 0004 Postgres/SQLAlchemy/Alembic, 0005 parsed block shape,
 │                                 # 0006 PDF library, 0007 reading order,
 │                                 # 0008 heading rules (Proposed), 0009 background jobs,
-│                                 # 0010 fixed-size chunking, 0011 chunk storage
+│                                 # 0010 fixed-size chunking, 0011 chunk storage,
+│                                 # 0012 embedder
 ├── eval/
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
@@ -71,7 +76,8 @@ adaptrag/
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
-│   └── list_chunk_sets.py        # one line per stored chunk set with its chunk count
+│   ├── list_chunk_sets.py        # one line per stored chunk set with its chunk count
+│   └── token_stats.py            # real model token counts of fixed-size chunks, per PDF
 ├── src/adaptrag/
 │   ├── __init__.py               # __version__
 │   ├── config.py                 # Settings (env prefix ADAPTRAG_), get_settings()
@@ -82,6 +88,11 @@ adaptrag/
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
 │   │   └── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
+│   ├── embedding/
+│   │   ├── base.py               # Embedder protocol (the seam)
+│   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached);
+│   │   │                         # the only module importing sentence_transformers / torch
+│   │   └── fake.py               # FakeEmbedder (hash-based, no model) for tests
 │   ├── parsing/
 │   │   ├── blocks.py             # BlockType, ParsedBlock, ParsedDocument
 │   │   └── pdf.py                # parse_pdf(), clean_text(), ParseError family, PARSER_VERSION
@@ -96,6 +107,8 @@ adaptrag/
 │   ├── test_documents.py  test_health.py  test_jobs.py  test_models.py
 │   ├── test_parsed_blocks.py  test_pdf_parser.py  test_ready.py  test_storage.py
 │   ├── test_text_chunk.py  test_fixed_chunker.py  test_chunk_storage.py
+│   ├── test_fake_embedder.py     # fast
+│   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 ├── .dockerignore  .env.example  .gitignore
 ├── docker-compose.yml            # api, migrate (one-off), db (Postgres + volume)
 ├── Dockerfile  pyproject.toml  README.md
@@ -116,13 +129,15 @@ python scripts/check_pdfs.py data/samples          # parse every sample PDF
 python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for one page
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
 python scripts/list_chunk_sets.py                  # stored chunk sets and chunk counts
+python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
+python -m pytest -m slow                           # slow tests only (real model; not in CI)
 ```
 **Owner's routine** before every commit (stops at the first failure; nothing is pushed
 unless everything passes):
 ```bash
 python -m ruff format . && python -m ruff check . --fix && python -m mypy && python -m alembic check && python -m pytest && git add -A && git commit -m "message" && git push
 ```
-Coding agents run only the check chain and commit on their branch; they never push.
+Coding agents never run this or any other command; the owner runs all commands.
 Locally `ruff format .` fixes formatting; CI only checks (`ruff format --check .`).
  
 Migrations:
@@ -140,6 +155,9 @@ once resolved to the wrong Python.
   `router = APIRouter()`. Import and register it in `create_app()`. Keep `main.py` as wiring only.
 - **Settings:** all config via env vars with prefix `ADAPTRAG_`, read through
   `get_settings()`. Never hardcode secrets. Add every new variable to `.env.example`.
+  Embedding settings: `embedding_model` (BAAI/bge-small-en-v1.5), `embedding_device`
+  (cpu), `embedding_query_instruction` ("Represent this sentence for searching relevant
+  passages: ", quoted in `.env` because of the trailing space).
 - **Database URL:** one setting, `ADAPTRAG_DATABASE_URL`. Not in `alembic.ini`.
   Never log the URL (it holds the password).
 - **Endpoints that use the database are plain `def`, not `async def`** (sync SQLAlchemy).
@@ -168,29 +186,38 @@ once resolved to the wrong Python.
   test). Pure unit tests must not need the database. Parser tests build their own PDFs
   with PyMuPDF; never depend on `data/samples/` (gitignored, copyrighted).
   Every test must be able to fail: assert behaviour that a wrong implementation would break.
+  Normal tests never load a real model; only `slow` tests do (`@pytest.mark.slow`,
+  excluded by default through `addopts`, run with `python -m pytest -m slow`). Use
+  `FakeEmbedder` elsewhere. Slow test files import `embedding.sentence_transformer`
+  inside a function, so collecting them does not import torch.
+- **Embeddings:** only `embedding/sentence_transformer.py` imports sentence_transformers
+  or torch. Device is always `cpu`. Vectors are normalised. Queries get
+  `embedding_query_instruction` as a prefix; chunks are embedded as plain text. Get the
+  model through `get_embedder()` (loaded once per process), never construct it per call.
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
 - **Commits:** small and meaningful. CI must stay green on `main`; experiment on branches.
 ## Rules for coding agents
 - One step per task. Don't build ahead.
-- Work on a branch named `stageN-stepM-short-name`; commit on that branch.
-- Never push, merge or touch `main` unless told to.
+- Coding agents only create and edit files. They never run terminal commands (no tests,
+  linters, scripts, docker or git). The owner runs all commands.
+- Work belongs on a branch named `stageN-stepM-short-name` (the owner creates it and commits).
+- Never merge or touch `main` unless told to.
 - Never run `docker compose down -v`; never drop or recreate the `adaptrag` database.
 - Never edit a pushed migration; never force-push.
 - Never add a dependency without a stated reason.
 - Never invent benchmark numbers.
-- Always `python -m <tool>`.
-- Run the full check chain before committing:
-  `python -m ruff format . && python -m ruff check . --fix && python -m mypy && python -m alembic check && python -m pytest`
+- Commands suggested to the owner always use `python -m <tool>`.
+- Where a real number (measurement, test result, image size) belongs, write
+  `TO FILL from owner's run: <what>`. Never estimate.
 - Stop and ask when a decision is not covered by the instructions.
 - End every task with this report (exact headings):
   1. Files changed (path + one line each)
-  2. Check chain output: the last line of each tool, and the pytest count line
-  3. Tests added, and the promise each one protects
-  4. Real-data check: commands run and their output
-  5. `git log --oneline -3` and `git --no-pager diff main --stat`
-  6. Anything you were unsure about or did differently from the instructions
+  2. Tests added, and the promise each one protects
+  3. Commands the owner should run to verify, in order
+  4. Placeholders left for the owner to fill
+  5. Anything you were unsure about or did differently from the instructions
 ## Architecture (planned request flow)
 1. Upload: validate type and size, hash file, skip duplicates (done)
 2. Parse: blocks with page, heading path, block type (done for text and pages;
@@ -260,8 +287,8 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 Step 2 done (chunk storage). Next: Stage 2 Step 3 (embeddings with
-BAAI/bge-small-en-v1.5 behind an Embedder seam).**
+**Status: Stage 2 Step 3 done (Embedder seam, bge-small, token measurement). Next: Stage 2
+Step 4 (Chroma vector store + embedding cache key; ingest embeds and stores).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,

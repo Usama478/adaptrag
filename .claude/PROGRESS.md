@@ -3,21 +3,24 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** Stage 2 in progress. Steps 1 and 2 DONE.
-  **Next: Stage 2, Step 3** (embeddings with BAAI/bge-small-en-v1.5 behind an Embedder seam).
+- **Current stage:** Stage 2 in progress. Steps 1, 2 and 3 DONE.
+  **Next: Stage 2, Step 4** (Chroma vector store + embedding cache key; ingest embeds and
+  stores).
 - **Last updated:** 2026-10-31
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (Postgres service in CI).
-- **Tests:** 66 passing. Decision notes 0001-0011 (0008 is "Proposed").
-- **Branch:** Step 2 committed on `stage2-step2-chunk-storage` (not pushed or merged yet).
-- **Working mode (from Stage 2 Step 2):** Claude Code implements each step from a prompt
-  on a branch; the owner reviews the diff in chat before merging; no fail-on-purpose
-  experiments; the owner runs manual checks when asked.
+- **Tests:** TO FILL from owner's run: pytest count line of `python -m pytest` (normal)
+  and of `python -m pytest -m slow`. Decision notes 0001-0012 (0008 is "Proposed").
+- **Branch:** Step 3 on `stage2-step3-embedder` (Part A "Tidy agent guide paths" committed;
+  Step 3 files not committed yet; not pushed).
+- **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
+  owner runs every command (tests, linters, scripts, docker, git) and fills in
+  `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
 ## Stage checklist
 | Stage | Name | Status |
 | --- | --- | --- |
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
-| 2 | Baseline RAG | In progress (Steps 1-2 done) |
+| 2 | Baseline RAG | In progress (Steps 1-3 done) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
@@ -35,9 +38,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 1. `TextChunk` + fixed-size chunker, 200/40 words, bge-small chosen [Done, note 0010]
 2. `chunk_sets` + `chunks` tables, chunks saved during ingestion [Done, note 0011]
 3. Embedder seam with sentence-transformers BAAI/bge-small-en-v1.5 + measure real token
-   counts of chunks [Next]
+   counts of chunks [Done, note 0012]
 4. Chroma vector store + embedding cache key (file hash + parser version + strategy and
-   params + model name); ingest embeds and stores; "ready to query" document status
+   params + model name); ingest embeds and stores; "ready to query" document status [Next]
 5. Dense retrieval + `POST /documents/{id}/query` returning top chunks with pages and
    scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a guess
 6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
@@ -64,6 +67,18 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    in one transaction with rollback on error. `uq` naming convention now uses
    `column_0_N_name`. Migration 3b2dd0114f3e. `scripts/list_chunk_sets.py`. Real-data check:
    paper_03 -> 29 chunks. Note 0011.
+3. **Embedder:** `embedding/base.py` (`Embedder` protocol), `embedding/sentence_transformer.py`
+   (`SentenceTransformerEmbedder`, cached `get_embedder()`; only module importing
+   sentence_transformers/torch), `embedding/fake.py` (`FakeEmbedder`, hash-based, dim 8).
+   New dependency `sentence-transformers>=6.2`. Device cpu; CPU-only torch in Docker and CI.
+   Settings `embedding_model`, `embedding_device`, `embedding_query_instruction`. Queries get
+   the bge instruction prefix, chunks don't; vectors normalised. Real-model tests marked
+   `slow` (excluded by default, not in CI). `scripts/token_stats.py`. Note 0012.
+   Token measurement (fixed-size 200/40, data/samples): TO FILL from owner's run: OVERALL
+   line of `python scripts/token_stats.py data/samples`.
+   api image size: TO FILL from owner's run: `docker images` SIZE for `adaptrag-api`.
+   Part A: `.claude/claude.md` renamed to `.claude/CLAUDE.md`; CONTEXT_HANDOFF.md
+   references removed.
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -175,6 +190,10 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Docker `migrate` failed until the image was rebuilt (`docker compose up --build -d`),
   because the image holds its own copy of `migrations/`.
 - `git diff` opens a pager: press `q`, or use `git --no-pager diff`.
+- A deselected test file is still imported during collection. A top-level import of the
+  real embedder made the normal run import torch, so it moved inside a function in
+  `tests/test_embedder_real.py`.
+- `.env` values with a trailing space must be quoted (`embedding_query_instruction`).
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -190,6 +209,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Unusable PDFs raise `ParseError` subclasses with user-safe messages.
 - FastAPI BackgroundTasks now, Redis queue later; separate `jobs` table (note 0009).
 - Evaluation questions deferred to Stage 4 (owner's decision).
+- Embedder seam with bge-small on CPU, CPU-only torch in Docker/CI, query instruction on
+  queries only, normalised vectors, model loaded once per process; real-model tests are
+  `slow` and not run in CI (note 0012).
 - Chroma for vectors (decided, not installed yet). Modular routers. `src/` layout;
   Python 3.11; strict mypy.
 ## Deferred / known limits
@@ -231,8 +253,12 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 2. Why does the chunker count words instead of the embedding model's tokens?
 3. Why does `run_ingest_job` call `session.rollback()` before recording a failure, and
    what would be saved without it?
+4. Why does the query get an instruction prefix but the chunks don't?
 
 ## Open items / notes for the next chat
-- Review and merge `stage2-step2-chunk-storage`, then start Stage 2 Step 3.
+- Owner: run the Step 3 checks, fill the `TO FILL` placeholders here and in note 0012,
+  commit "Add Embedder seam with bge-small and token measurement", review, merge.
+- Step 4 must decide: how the model reaches the Docker container (bake into the image or
+  cache volume), and whether chunks over 512 tokens need a token cap.
 - Documents ingested before Step 2 have no chunks (duplicates are not re-processed).
 - Update this file at the end of the chat.

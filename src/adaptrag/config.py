@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     max_upload_mb: int = 20
     data_dir: Path = Path("data")
     database_url: str = "postgresql+psycopg://adaptrag:change-me@localhost:5432/adaptrag"
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_device: str = "cpu"
+    embedding_query_instruction: str = "Represent this sentence for searching relevant passages: "
 
 
 @lru_cache

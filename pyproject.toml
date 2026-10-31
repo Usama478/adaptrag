@@ -17,6 +17,8 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
     "pymupdf>=1.24",
+    # Local, free, reproducible embeddings (BAAI/bge-small-en-v1.5, notes 0010 and 0012).
+    "sentence-transformers>=6.2",
 ]
 
 [project.optional-dependencies]
@@ -42,3 +44,6 @@ files = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Slow tests load a real model; run them with `python -m pytest -m slow`.
+addopts = "-m 'not slow'"
+markers = ["slow: loads a real model (excluded by default; run with -m slow)"]
