@@ -8,8 +8,8 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 - **Last updated:** 2026-10-31
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** Step 6: TO FILL from owner's run: passed / deselected (normal run); passed /
-  skipped (`-m slow`, with the key set). Step 5: 112 passed, 5 deselected.
+- **Tests:** Step 6: 136 passed, 7 deselected (normal run); 7 passed with `-m slow`
+  (5 embedder, 2 real OpenAI). Step 5: 112 passed, 5 deselected.
   Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
   Decision notes 0001-0015 (0008 is "Proposed").
 - **Branch:** Step 6 on `stage2-step6-answer` (owner commits after checks).
@@ -63,6 +63,8 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Rank 1 is not always the answering chunk (GAN question: rank 3).
 - Retrieval scores measure topic similarity, not answer presence: in-domain
   unanswerable questions score 0.61-0.70, close to answerable ones.
+- Top-k compensated a retrieval miss: for the GAN question the answering chunk was
+  rank 3, and the LLM cited source 3.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -142,7 +144,7 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    typed responses). Settings `openai_api_key` (SecretStr, `.env` only), `llm_model`
    (gpt-4o-mini, owner's choice for the lowest cost), `llm_temperature` (0.0; None = not
    sent), `llm_timeout_seconds` (30), `llm_max_output_tokens` (500),
-   `retrieval_min_score` (0.55, provisional, from the measured dev questions).
+   `retrieval_min_score` (0.55, provisional, from the 8 measured dev questions).
    `llm/`: `LLM` protocol + `LLMError` (base.py), `OpenAILLM` (Responses API, only module
    importing openai, max_retries=2, logs input/output tokens at INFO), `FakeLLM`,
    `get_app_llm` (503 without a key). `answering/prompt.py` (rules: sources only, cite
@@ -151,12 +153,20 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    de-duplicated in order and mapped to chunk pages by our code; no valid citation ->
    WARNING). `POST /documents/{id}/answer` (502 on LLMError, 503 without a key); `/query`
    unchanged. `scripts/answer.py`. Note 0015.
-   Tests: TO FILL from owner's run: normal run counts; `-m slow` counts (real LLM tests
-   pass or are skipped without a key).
-   Real-data check: TO FILL from owner's run: `python scripts/answer.py` outputs (found,
-   answer, citations with pages, top scores) for an answerable, an off-topic and an
-   in-domain unanswerable question; does the in-domain one return NOT_FOUND?
-   Token usage: TO FILL from owner's run: input / output tokens per answer (INFO log).
+   Tests: 136 passed, 7 deselected (normal run); 7 passed with `-m slow` (5 embedder,
+   2 real OpenAI: answerable question cited correctly, PWNED injection not followed).
+   Real-data check (`scripts/answer.py`, gpt-4o-mini, k=5, min_score 0.55; tokens are
+   input / output):
+   - paper_01 "Which optimizer was used for training?": found, "Adam ... [1][2]",
+     citations pp. 7-8 and p. 7; 1921 / 43 tokens.
+   - paper_03 "Which two models are trained at the same time?": found, "generative model
+     G and discriminative model D [3][4]", citations p. 1 and pp. 2-3; 1651 / 40 tokens.
+   - paper_01 "What accuracy does the model reach on ImageNet?": not found by the LLM
+     (NOT_FOUND); 1720 / 3 tokens.
+   - paper_01 "What is the capital of France?": not found by retrieval (top 0.4440 <
+     0.55); no LLM call.
+   Docker `POST /documents/1/answer` returned the same answer and citations.
+   Both not-found layers worked on real data. Money cost and latency: Step 7.
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -341,8 +351,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
-- Not-found threshold 0.55 comes from the 9 measured dev questions only; recalibrate in
-  Stage 4. Answers may vary between runs. Cost and latency not measured yet.
+- Not-found threshold 0.55 comes from the 8 measured dev questions only; recalibrate in
+  Stage 4. Answers may vary between runs. About 1,700-1,900 input tokens per answer;
+  money cost and latency measured in Step 7.
 - gpt-4o-mini may follow the citation and NOT_FOUND rules less reliably than newer
   models (watch the slow test and the gate questions); availability and price must be
   checked by the owner on OpenAI's site.

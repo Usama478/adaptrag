@@ -22,8 +22,6 @@ Scores measured with `scripts/query.py` (bge-small, k=3, top score, owner's run)
 | "sourdough bread" | off-topic | 0.4465 |
 | "best football club" | off-topic | 0.4167 |
 
-(Nine questions were measured; the table shows the eight with recorded scores.)
-
 ## Decision
 - **Two-layer not-found.**
   1. Retrieval layer: if there are no results or the top score is below
@@ -83,9 +81,14 @@ Scores measured with `scripts/query.py` (bge-small, k=3, top score, owner's run)
   outages), and the benchmark needs retrieval results on their own.
 
 ## Known limits
-- The 0.55 threshold comes from 9 dev questions only; recalibrate in Stage 4.
+- The 0.55 threshold comes from 8 dev questions only (3 answerable, 3 off-topic,
+  2 in-domain unanswerable); recalibrate in Stage 4.
 - Answers may vary between runs (even at temperature 0).
-- Cost and latency per answer: TO FILL from owner's run (token counts from the logs).
+- Cost and latency: measured token counts (owner's run, gpt-4o-mini, k=5) were 1921 / 43,
+  1651 / 40 and 1720 / 3 input / output tokens for the three answers that reached the
+  LLM, so about 1,700-1,900 input tokens per answer; a retrieval-layer not-found costs
+  no tokens. Money cost (from the owner's OpenAI usage page) and latency are measured in
+  Step 7.
 - An older model may follow the citation and NOT_FOUND rules less reliably; measured by
   the slow test and the Stage 2 gate questions.
 - The model's availability and price must be checked by the owner on OpenAI's site.

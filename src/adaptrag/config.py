@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     llm_temperature: float | None = 0.0
     llm_timeout_seconds: float = 30.0
     llm_max_output_tokens: int = 500
-    # Provisional: from 9 measured dev questions (note 0015); recalibrate in Stage 4.
+    # Provisional: from 8 measured dev questions (note 0015); recalibrate in Stage 4.
     retrieval_min_score: float = 0.55
 
 
