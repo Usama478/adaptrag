@@ -9,6 +9,9 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (Postgres service in CI).
 - **Tests:** 66 passing. Decision notes 0001-0011 (0008 is "Proposed").
 - **Branch:** Step 2 committed on `stage2-step2-chunk-storage` (not pushed or merged yet).
+- **Working mode (from Stage 2 Step 2):** Claude Code implements each step from a prompt
+  on a branch; the owner reviews the diff in chat before merging; no fail-on-purpose
+  experiments; the owner runs manual checks when asked.
 ## Stage checklist
 | Stage | Name | Status |
 | --- | --- | --- |
@@ -28,18 +31,33 @@ Parallel task: evaluation question set. **Deferred to Stage 4 (owner's decision)
 (made-up examples, not real questions). At Stage 4: LLM drafts questions in that
 format, owner verifies each against the PDF and sets `"verified": true`.
  
-## Stage 2 steps
-| Step | What | Status |
-| --- | --- | --- |
-| 1 | `TextChunk` + fixed-size chunker (200 words, 40 overlap); embedding model bge-small chosen | Done (note 0010) |
-| 2 | Chunk storage: `chunk_sets` + `chunks` tables, saved during ingestion | Done (note 0011) |
-| 3 | Embeddings with BAAI/bge-small-en-v1.5 behind an Embedder seam | Next |
+## Stage 2 plan (approved)
+1. `TextChunk` + fixed-size chunker, 200/40 words, bge-small chosen [Done, note 0010]
+2. `chunk_sets` + `chunks` tables, chunks saved during ingestion [Done, note 0011]
+3. Embedder seam with sentence-transformers BAAI/bge-small-en-v1.5 + measure real token
+   counts of chunks [Next]
+4. Chroma vector store + embedding cache key (file hash + parser version + strategy and
+   params + model name); ingest embeds and stores; "ready to query" document status
+5. Dense retrieval + `POST /documents/{id}/query` returning top chunks with pages and
+   scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a guess
+6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
+   LLM behind a seam with a fake for tests (decision then: LLM provider)
+7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs
+
+## Stage 2 gate
+- The owner writes 10 hand-verified questions for paper_01 in the eval format before
+  Step 7 (option A, assumed).
+- A page citation counts as correct when the evidence page is inside
+  page_start..page_end of the cited chunk.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
    page_end) and `chunking/fixed.py` (`chunk_fixed_size`, 200 words, 40 overlap, chunks
    may cross pages). Embedding model chosen: BAAI/bge-small-en-v1.5 (512 tokens), not
    installed yet. `scripts/chunk_pdfs.py` summarises a folder. Note 0010.
+   Finding: chunks crossing a page boundary are common (paper_01 16/38, paper_02 17/62,
+   paper_03 12/29, paper_04 18/64, paper_05 3/20). paper_05 "short" has 4 pages but
+   3236 words (dense IEEE pages); relevant for the Stage 3 "very short" rule.
 2. **Chunk storage:** `ChunkSet` (document, strategy, params JSONB, parser_version; unique
    on those four) and `Chunk` (chunk_set, chunk_index, text, pages; unique on set + index),
    both ON DELETE CASCADE. `save_chunk_set()` skips an identical set; parse + chunk + save
@@ -190,6 +208,13 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - Whole upload read into memory (fine at 20 MB).
 - `StarletteDeprecationWarning` about httpx in tests: look into separately.
 - Dev database documents 1 and 2 were uploaded before jobs existed (no job, status uploaded).
+- Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
+  LLM client) when it is created, and expose its params for the cache key.
+- Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
+## Future stretch ("Stage 10", after Stage 6, tuned on dev documents only)
+- Semantic chunking (owner's own binary-search boundary method).
+- LLM-guided chunking.
+- Each one is one strategy file + one registry line.
 ## Explain-aloud questions (Stage 1, answer without notes)
 1. What's the difference between `/health` and `/ready`?
 2. Why does the rest of the app read `ParsedBlock` instead of PyMuPDF's own objects?
@@ -203,20 +228,11 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 10. Why does `test_page_must_be_one_or_more` test 0 and not only -1?
 ## Explain-aloud questions (Stage 2, answer without notes)
 1. Why did deleting the empty migration break the test database but not the dev database?
+2. Why does the chunker count words instead of the embedding model's tokens?
+3. Why does `run_ingest_job` call `session.rollback()` before recording a failure, and
+   what would be saved without it?
 
-## Proposed Stage 2 plan (confirm at the start of Stage 2)
-1. Chunk table (migration) + fixed-size chunker (the control strategy)
-2. Embeddings with sentence-transformers + embedding cache key
-   (file hash + parser version + strategy and params + model name)
-3. Chroma storage with metadata (doc id, page, strategy)
-4. Dense retrieval
-5. LLM answer with page citations, "not found in your documents", injection-safe prompt
-6. Gate: 10 questions on one paper, off-topic "not found", injection test, cache test,
-   integration test (upload -> query -> cited answer)
-Decisions to flag in Stage 2: embedding model, LLM provider, chunk size and overlap.
- 
 ## Open items / notes for the next chat
 - Review and merge `stage2-step2-chunk-storage`, then start Stage 2 Step 3.
 - Documents ingested before Step 2 have no chunks (duplicates are not re-processed).
 - Update this file at the end of the chat.
- 

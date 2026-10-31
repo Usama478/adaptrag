@@ -48,6 +48,9 @@ Decide per component by the cost of changing it later.
 ## Repo layout
 ```
 adaptrag/
+├── .claude/
+│   ├── claude.md                 # this guide (CLAUDE.md; tracked here, lowercase name)
+│   └── PROGRESS.md               # current state, log, lessons learned
 ├── .github/workflows/ci.yml      # lint, format, mypy, migrations, alembic check, tests
 ├── alembic.ini                   # NO database URL here (env.py reads settings)
 ├── migrations/
@@ -94,11 +97,11 @@ adaptrag/
 │   ├── test_parsed_blocks.py  test_pdf_parser.py  test_ready.py  test_storage.py
 │   ├── test_text_chunk.py  test_fixed_chunker.py  test_chunk_storage.py
 ├── .dockerignore  .env.example  .gitignore
-├── CLAUDE.md  CONTEXT_HANDOFF.md  PROGRESS.md
 ├── docker-compose.yml            # api, migrate (one-off), db (Postgres + volume)
 ├── Dockerfile  pyproject.toml  README.md
 ```
-`.env`, `data/` (sample PDFs, uploads) are gitignored.
+`.env`, `data/` (sample PDFs, uploads) are gitignored. `CONTEXT_HANDOFF.md` is not in
+the repo (the owner keeps it outside).
  
 ## Commands (always use `python -m`, never the bare tool)
 ```bash
@@ -164,7 +167,7 @@ once resolved to the wrong Python.
   `make_client` fixtures (test database, TRUNCATE of every `Base` table after each
   test). Pure unit tests must not need the database. Parser tests build their own PDFs
   with PyMuPDF; never depend on `data/samples/` (gitignored, copyrighted).
-  Every new checker or test gets a "make it fail on purpose" check.
+  Every test must be able to fail: assert behaviour that a wrong implementation would break.
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -184,7 +187,7 @@ once resolved to the wrong Python.
 - End every task with this report (exact headings):
   1. Files changed (path + one line each)
   2. Check chain output: the last line of each tool, and the pytest count line
-  3. Fail-on-purpose: failing test name and assertion line, then confirmation it was restored
+  3. Tests added, and the promise each one protects
   4. Real-data check: commands run and their output
   5. `git log --oneline -3` and `git --no-pager diff main --stat`
   6. Anything you were unsure about or did differently from the instructions
@@ -222,8 +225,10 @@ Done:
 Add columns only when they can be filled: title (parser), profile, strategy,
 reason (router). Planned: Notebook, QueryLog.
 ## Strategy interface (Stage 3)
-Every strategy implements `chunk(parsed_doc) -> list[Chunk]` and
-`retrieve(query, doc_id, k) -> list[ScoredChunk]`. A registry maps names to classes.
+Every strategy implements `chunk(parsed_doc) -> list[TextChunk]` and
+`retrieve(query, doc_id, k) -> list[ScoredChunk]`. Strategies receive their dependencies
+(embedder, LLM client) at construction and expose their params (part of the cache key).
+A registry maps names to classes.
 Adding a strategy = one new file + one registry line. Starting strategies:
 fixed-size (control), recursive with overlap, section-aware with parent retrieval.
  

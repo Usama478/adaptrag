@@ -15,7 +15,7 @@ and model changes, and "delete means delete" must remove every chunk.
     parser_version, created_at. Unique on (document_id, strategy, params, parser_version).
   - `chunks`: chunk_set_id (FK, ON DELETE CASCADE), chunk_index, text, page_start,
     page_end. Unique on (chunk_set_id, chunk_index).
-- Postgres is the source of truth for chunk text. Chroma (Step 3) will hold only vectors
+- Postgres is the source of truth for chunk text. Chroma (Step 4) will hold only vectors
   keyed by chunk id, so vectors can be rebuilt from Postgres at any time.
 - `save_chunk_set` checks for an identical set first and skips it; the unique
   constraint is the safety net if the check is ever bypassed.
@@ -25,7 +25,7 @@ and model changes, and "delete means delete" must remove every chunk.
 - The `uq` naming convention now uses `column_0_N_name`, so multi-column unique
   constraints get names listing every column.
 - No new document status yet ("parsed" stays the success status); a new status comes
-  when vectors exist (Step 3).
+  when vectors exist (Step 4).
 
 ## Rejected
 - One flat `chunks` table with strategy and params on every row: repeats the settings
