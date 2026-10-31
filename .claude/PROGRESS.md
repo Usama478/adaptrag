@@ -3,14 +3,16 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** Stage 2 in progress. Steps 1, 2, 3 and 4 DONE.
-  **Next: Stage 2, Step 5** (dense retrieval + `POST /documents/{id}/query`, no LLM).
+- **Current stage:** Stage 2 in progress. Steps 1, 2, 3, 4 and 5 DONE.
+  **Next: Stage 2, Step 6** (LLM answer with page citations, "not found in your
+  documents" with a threshold chosen from measured scores, injection-safe prompt).
 - **Last updated:** 2026-10-31
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** TO FILL from owner's run: passed / deselected (normal run); passed (`-m slow`).
-  Decision notes 0001-0013 (0008 is "Proposed").
-- **Branch:** Step 4 on `stage2-step4-vectors` (owner commits after checks).
+- **Tests:** TO FILL from owner's run: passed / deselected (normal run, Step 5); passed
+  (`-m slow`). Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
+  Decision notes 0001-0014 (0008 is "Proposed").
+- **Branch:** Step 5 on `stage2-step5-retrieval` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -19,7 +21,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | --- | --- | --- |
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
-| 2 | Baseline RAG | In progress (Steps 1-4 done) |
+| 2 | Baseline RAG | In progress (Steps 1-5 done) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
@@ -43,10 +45,11 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    ingest embeds and stores; "ready" document status; log a warning and count chunks
    over max_tokens per document [Done, note 0013]
 5. Dense retrieval (exact search) + `POST /documents/{id}/query` returning top chunks with
-   pages and scores (no LLM yet); provisional "weak retrieval" threshold, labelled as a
-   guess [Next]
-6. LLM answer with page citations, "not found in your documents", injection-safe prompt,
-   LLM behind a seam with a fake for tests (decision then: LLM provider)
+   pages and scores (no LLM yet). Changed: no provisional threshold; the "weak retrieval"
+   threshold moves to Step 6, chosen from measured scores [Done, note 0014]
+6. LLM answer with page citations, "not found in your documents" (threshold chosen from
+   measured scores), injection-safe prompt, LLM behind a seam with a fake for tests
+   (decision then: LLM provider) [Next]
 7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs; measure the
    first-upload model load time after a restart (note 0013 known limit)
 
@@ -100,9 +103,28 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    `FakeEmbedder(dimension=384)` (FakeEmbedder now supports any dimension).
    Docker: volumes `app-data` (/app/data) and `hf-cache` (/app/.cache/huggingface,
    `HF_HOME`). `scripts/reingest.py`; `list_chunk_sets.py` prints embedding counts.
-   Note 0013. Tests: TO FILL from owner's run: normal run and `-m slow` counts.
-   Real-data check: TO FILL from owner's run: `list_chunk_sets.py` line for the
-   re-ingested document (chunks = embeddings?).
+   Note 0013. Tests: 92 passed, 5 deselected (normal run); 5 passed (`-m slow`).
+   Real-data check: `scripts/reingest.py 5` (paper_03): job succeeded, 29 chunks,
+   29 embeddings, WARNING "1 of 29 chunks exceed 512 tokens" (matches the Step 3
+   measurement: paper_03 has 1 chunk over 512). Docker: `hf-cache` and `app-data`
+   volumes created, `/ready` returned `{"status":"ready","database":"ok"}`. CI green on
+   the pgvector image.
+5. **Dense retrieval:** `retrieval/results.py` (`ScoredChunk`, frozen and slotted),
+   `vectorstore/pgvector.py` `search()` (exact search, pgvector cosine distance, filtered
+   by chunk set and model name, `ORDER BY distance, chunk_index LIMIT k`,
+   score = 1 - distance; ValueError for a wrong-length vector or k < 1; all vector SQL
+   stays here). `retrieval/dense.py`: `current_chunk_set_id()` (fixed_size,
+   `FIXED_SIZE_PARAMS`, `PARSER_VERSION`, the same constants ingest uses),
+   `retrieve_dense()` (embed_query, then search), shared limits and messages.
+   `routes/query.py`: `POST /documents/{id}/query` (422 invalid body, 404 unknown,
+   409 not ready, 409 needs re-ingestion, 200 top-k best first). No LLM, no threshold
+   (owner's decision: the threshold is chosen in Step 6 from measured scores).
+   Scripts: `query.py`, `list_documents.py`, `reingest.py --file PATH` (SHA-256 checked
+   with storage.py, restores a missing upload). Note 0014.
+   Tests: TO FILL from owner's run: normal run and `-m slow` counts.
+   Real-data check: TO FILL from owner's run: `python scripts/query.py 5 "<a question
+   about paper_03>"` output (top 5 scores and pages; does the top chunk contain the
+   answer?).
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -220,6 +242,11 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - `.env` values with a trailing space must be quoted (`embedding_query_instruction`).
 - Appending to a file without a final newline glued two lines together (.env.example).
   Check the last line before appending.
+- curl right after `docker compose up -d` can fail because uvicorn is not listening yet;
+  re-run it (use `;` instead of `&&` for checks that may fail).
+- The local app and the Docker app share one database but not one upload folder
+  (data/uploads vs the app-data volume), so a document may exist without its file locally.
+  `scripts/list_documents.py` shows which; `scripts/reingest.py ID --file PATH` restores it.
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -242,6 +269,10 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   exact search, no ANN index, fixed 384 dimensions, structural cache key, embedder via
   a FastAPI dependency, "ready" document status, Docker volumes for uploads and the
   model cache. Modular routers. `src/` layout; Python 3.11; strict mypy.
+- Dense retrieval (note 0014): `POST /documents/{id}/query` with a JSON body, current
+  chunk set only (409 asks for re-ingestion otherwise), cosine distance with
+  score = 1 - distance, exact search ordered by distance then chunk_index, vector SQL only
+  in `vectorstore/pgvector.py`, no threshold until Step 6 measures scores.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules.
@@ -263,6 +294,12 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - The model downloads from Hugging Face on first use into the `hf-cache` volume (first
   upload in a fresh Docker setup needs network access).
 - Exact search reads every vector: fine only at small scale (a few hundred chunks).
+- Query searches only the fixed-size chunk set until the router exists (Stage 3); one
+  document per query until notebooks (Stage 7).
+- The first query after a restart also loads the model (dependency runs first, even for
+  404/409 answers).
+- `FakeEmbedder` scores are meaningless: query tests check shape and order only; ranking
+  quality is measured with the real model in Stage 4.
 - Documents ingested before Step 4 have no embeddings until `scripts/reingest.py` runs.
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
@@ -290,9 +327,13 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 4. Why does the query get an instruction prefix but the chunks don't?
 5. Why pgvector instead of Chroma once we chose Postgres?
 6. Why exact search instead of an HNSW index for the benchmark?
+7. Why cosine distance, and why score = 1 - distance?
+8. Why choose the not-found threshold from measured scores instead of a default?
 
 ## Open items / notes for the next chat
-- Owner: run the Step 4 checks, fill the placeholders, commit, review, merge.
+- Owner: run the Step 5 checks, fill the placeholders, commit, review, merge.
+- Step 6: record the real scores from `scripts/query.py` (answerable and unanswerable
+  questions) before choosing the not-found threshold.
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.

@@ -76,7 +76,8 @@ adaptrag/
 │                                 # 0006 PDF library, 0007 reading order,
 │                                 # 0008 heading rules (Proposed), 0009 background jobs,
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
-│                                 # 0012 embedder, 0013 vector storage (pgvector)
+│                                 # 0012 embedder, 0013 vector storage (pgvector),
+│                                 # 0014 dense retrieval
 ├── eval/
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
@@ -85,7 +86,10 @@ adaptrag/
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
-│   ├── reingest.py               # new job for an existing document, real embedder
+│   ├── list_documents.py         # one line per document: status, pages, upload file present?
+│   ├── query.py                  # top-k chunks for a question (real embedder), like the API
+│   ├── reingest.py               # new job for an existing document, real embedder;
+│   │                             # --file PATH restores a missing upload (SHA-256 checked)
 │   └── token_stats.py            # real model token counts of fixed-size chunks, per PDF
 ├── src/adaptrag/
 │   ├── __init__.py               # __version__
@@ -97,7 +101,10 @@ adaptrag/
 │   ├── ingest.py                 # run_ingest_job(): parse, chunk, save_chunk_set(),
 │   │                             # embed_chunk_set(), job outcome
 │   ├── vectorstore/
-│   │   └── pgvector.py           # embeddings_exist(), save_embeddings() (search: Step 5)
+│   │   └── pgvector.py           # embeddings_exist(), save_embeddings(), search() (all vector SQL)
+│   ├── retrieval/
+│   │   ├── results.py            # ScoredChunk (chunk + pages + score = 1 - cosine distance)
+│   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
 │   │   └── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
@@ -115,13 +122,15 @@ adaptrag/
 │       ├── health.py             # GET /health (liveness)
 │       ├── ready.py              # GET /ready (readiness: database reachable)
 │       ├── documents.py          # POST /documents
-│       └── jobs.py               # GET /jobs/{id}
+│       ├── jobs.py               # GET /jobs/{id}
+│       └── query.py              # POST /documents/{id}/query
 ├── tests/
 │   ├── conftest.py               # test DB URL, migrated engine, TRUNCATE all Base tables, make_client
 │   ├── test_documents.py  test_health.py  test_jobs.py  test_models.py
 │   ├── test_parsed_blocks.py  test_pdf_parser.py  test_ready.py  test_storage.py
 │   ├── test_text_chunk.py  test_fixed_chunker.py  test_chunk_storage.py
-│   ├── test_vector_store.py      # pgvector storage (database)
+│   ├── test_vector_store.py      # pgvector storage and search (database)
+│   ├── test_query.py             # POST /documents/{id}/query (API)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 ├── .dockerignore  .env.example  .gitignore
@@ -145,7 +154,10 @@ python scripts/check_pdfs.py data/samples          # parse every sample PDF
 python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for one page
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
 python scripts/list_chunk_sets.py                  # stored chunk sets, chunk and embedding counts
+python scripts/list_documents.py                   # documents, status, upload file present?
 python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real model) for a document
+python scripts/reingest.py DOCUMENT_ID --file PATH # same, restoring a missing upload first
+python scripts/query.py DOCUMENT_ID "QUESTION" --k 5   # top-k chunks (real model)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model; not in CI)
@@ -264,6 +276,13 @@ Done:
 - `POST /documents`: 415 wrong type, 413 too large, 202 new (with `job_id`),
   200 duplicate (existing document and its latest `job_id`, or null)
 - `GET /jobs/{id}`: `{job_id, document_id, status, error}`; 404 if unknown
+- `POST /documents/{id}/query` (note 0014): body `{question (stripped, 1-1000 chars),
+  k = 5 (1-20)}`; 422 invalid body (blank question, k out of range); 404 unknown document;
+  409 "Document is not ready (status: <status>)"; 409 "Document needs re-ingestion for the
+  current settings" (no current chunk set, or no vectors for the embedder's model).
+  200: `{document_id, chunk_set_id, model_name, results: [{chunk_id, chunk_index,
+  page_start, page_end, score, text}]}`, best first, score = 1 - cosine distance.
+  No LLM and no threshold yet.
 Planned: GET /documents/{id}, DELETE /documents/{id}, POST /notebooks,
 POST /notebooks/{id}/query, POST /query/compare.
 ## Data model
@@ -318,8 +337,10 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 Step 4 done (pgvector storage, structural cache key, ingest embeds and
-stores, status "ready"). Next: Stage 2 Step 5 (dense retrieval + `POST /documents/{id}/query`).**
+**Status: Stage 2 Step 5 done (dense retrieval, exact cosine search,
+`POST /documents/{id}/query`, no LLM, no threshold). Next: Stage 2 Step 6 (LLM answer with
+page citations, "not found in your documents" with a threshold chosen from measured
+scores, injection-safe prompt).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,
