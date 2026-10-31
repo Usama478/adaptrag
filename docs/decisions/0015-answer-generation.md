@@ -87,10 +87,12 @@ Scores measured with `scripts/query.py` (bge-small, k=3, top score, owner's run)
 - Cost and latency: measured token counts (owner's run, gpt-4o-mini, k=5) were 1921 / 43,
   1651 / 40 and 1720 / 3 input / output tokens for the three answers that reached the
   LLM, so about 1,700-1,900 input tokens per answer; a retrieval-layer not-found costs
-  no tokens. Money cost (from the owner's OpenAI usage page) and latency are measured in
-  Step 7.
+  no tokens. Step 7 gate run (note 0016, `scripts/gate_check.py`, local, 10 questions):
+  answer latency mean 1.79 s, max 2.80 s per answer (model load excluded); 1567-1999
+  input and 14-129 output tokens per answer. Money cost: see the owner's OpenAI usage
+  page (not recorded here).
 - An older model may follow the citation and NOT_FOUND rules less reliably; measured by
-  the slow test and the Stage 2 gate questions.
+  the slow test and the Stage 2 gate questions (10/10 cited the right page, note 0016).
 - The model's availability and price must be checked by the owner on OpenAI's site.
 - The injection defence reduces the risk but does not eliminate it.
 - One document per question until notebooks (Stage 7).

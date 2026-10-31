@@ -80,15 +80,18 @@ adaptrag/
 │                                 # 0008 heading rules (Proposed), 0009 background jobs,
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
 │                                 # 0012 embedder, 0013 vector storage (pgvector),
-│                                 # 0014 dense retrieval, 0015 answer generation
+│                                 # 0014 dense retrieval, 0015 answer generation,
+│                                 # 0016 Stage 2 gate
 ├── eval/
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
+│       └── paper_01.json         # 10 Stage 2 gate questions (verified by the owner)
 ├── scripts/
 │   ├── answer.py                 # LLM answer with citations (real embedder + real LLM)
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
+│   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
 │   ├── query.py                  # top-k chunks for a question (real embedder), like the API
@@ -115,6 +118,9 @@ adaptrag/
 │   ├── answering/
 │   │   ├── prompt.py             # build_prompt(): system rules + numbered <source> tags
 │   │   └── answer.py             # answer_question(): two-layer not-found, citation mapping
+│   ├── evaluation/
+│   │   └── gate.py               # load_questions(), cited_ok(), retrieved_ok(), normalise(),
+│   │                             # gate_passed() (pure scoring rules, unit-tested)
 │   ├── retrieval/
 │   │   ├── results.py            # ScoredChunk (chunk + pages + score = 1 - cosine distance)
 │   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
@@ -148,6 +154,7 @@ adaptrag/
 │   ├── test_prompt.py            # answer prompt (unit)
 │   ├── test_answer.py            # answer_question (database, FakeLLM)
 │   ├── test_answer_api.py        # POST /documents/{id}/answer (API, FakeLLM)
+│   ├── test_gate.py              # gate scoring rules and question loader (unit)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 │   ├── test_llm_real.py          # @pytest.mark.slow + skipped without a key: real OpenAI
@@ -177,6 +184,9 @@ python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real mode
 python scripts/reingest.py DOCUMENT_ID --file PATH # same, restoring a missing upload first
 python scripts/query.py DOCUMENT_ID "QUESTION" --k 5   # top-k chunks (real model)
 python scripts/answer.py DOCUMENT_ID "QUESTION" --k 5  # LLM answer + citations (needs the key)
+python scripts/gate_check.py eval/questions/paper_01.json --document-id ID --k 5
+                                                   # Stage 2 gate: scores verified questions
+                                                   # (one real LLM call each; costs money)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model, real LLM
@@ -376,10 +386,10 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 Step 6 done (`POST /documents/{id}/answer`: gpt-4o-mini behind the LLM
-seam, numbered-source citations mapped to pages by our code, two-layer not-found with
-provisional threshold 0.55, injection-safe prompt). Next: Stage 2 Step 7 (Docker rebuild,
-end-to-end check, Stage 2 gate, docs).**
+**Status: Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact
+search, gpt-4o-mini answers with page citations; gate 10/10 cited the right page on
+paper_01, PASS, note 0016). Next: Stage 3 (strategy interface, profiler, router,
+headings and tables).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,

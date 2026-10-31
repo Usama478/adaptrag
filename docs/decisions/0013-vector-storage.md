@@ -81,8 +81,11 @@ nothing else should.
 - A model with a different number of dimensions needs a new migration (new column or
   new table).
 - The first upload after a restart loads the model during the request, because the
-  dependency runs before the endpoint (time: not measured yet; to be measured in the
-  Stage 2 Step 7 Docker check). Any `POST /documents` triggers the load, even one
+  dependency runs before the endpoint. Measured in the Stage 2 Step 7 Docker check
+  (owner's run): the first `POST /documents/{id}/query` after an API restart took
+  3.23 s, later ones 0.035 s, so the model load costs about 3.2 s once per process.
+  `/query` and `POST /documents` use the same `get_app_embedder` dependency, so the
+  first upload pays the same load. Any `POST /documents` triggers the load, even one
   that is then rejected or is a duplicate.
 - The model is downloaded from Hugging Face on first use into the `hf-cache` volume;
   the first upload in a fresh Docker setup needs network access.

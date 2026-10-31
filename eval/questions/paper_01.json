@@ -1,0 +1,106 @@
+{
+  "paper": "paper_01_single_column.pdf",
+  "questions": [
+    {
+      "id": "q01",
+      "type": "factual",
+      "question": "How many identical layers does the encoder stack have?",
+      "answer": "N = 6",
+      "evidence": [
+        {"page": 3, "text": "The encoder is composed of a stack of"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q02",
+      "type": "factual",
+      "question": "What is the output dimension d_model of the model?",
+      "answer": "512",
+      "evidence": [
+        {"page": 3, "text": "as well as the embedding layers, produce outputs of dimension"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q03",
+      "type": "factual",
+      "question": "How many parallel attention heads does the model use?",
+      "answer": "h = 8",
+      "evidence": [
+        {"page": 5, "text": "parallel attention layers, or heads"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q04",
+      "type": "factual",
+      "question": "What is the inner-layer dimensionality of the feed-forward networks?",
+      "answer": "d_ff = 2048",
+      "evidence": [
+        {"page": 5, "text": "the inner-layer has dimensionality"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q05",
+      "type": "factual",
+      "question": "Why are the dot products scaled by 1/sqrt(d_k)?",
+      "answer": "For large d_k the dot products grow large and push the softmax into regions with extremely small gradients.",
+      "evidence": [
+        {"page": 4, "text": "the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q06",
+      "type": "factual",
+      "question": "Which optimizer was used, and with which beta1, beta2 and epsilon?",
+      "answer": "Adam; beta1 = 0.9, beta2 = 0.98, epsilon = 1e-9",
+      "evidence": [
+        {"page": 7, "text": "We used the Adam optimizer"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q07",
+      "type": "factual",
+      "question": "On what hardware were the models trained, and how long did the base models take?",
+      "answer": "One machine with 8 NVIDIA P100 GPUs; 100,000 steps, about 12 hours.",
+      "evidence": [
+        {"page": 7, "text": "We trained our models on one machine with 8 NVIDIA P100 GPUs"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q08",
+      "type": "factual",
+      "question": "What BLEU score does the big Transformer get on WMT 2014 English-to-German?",
+      "answer": "28.4",
+      "evidence": [
+        {"page": 8, "text": "establishing a new state-of-the-art BLEU score of 28.4"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q09",
+      "type": "factual",
+      "question": "What label smoothing value was used during training?",
+      "answer": "0.1",
+      "evidence": [
+        {"page": 8, "text": "During training, we employed label smoothing of value"}
+      ],
+      "verified": true
+    },
+    {
+      "id": "q10",
+      "type": "two_section",
+      "question": "Why did the authors choose sinusoidal positional encodings, and how did learned positional embeddings compare?",
+      "answer": "Sinusoids may let the model extrapolate to longer sequences; learned embeddings gave nearly identical results.",
+      "evidence": [
+        {"page": 6, "text": "may allow the model to extrapolate to sequence lengths longer"},
+        {"page": 9, "text": "replace our sinusoidal positional encoding with learned positional embeddings"}
+      ],
+      "verified": true
+    }
+  ]
+}

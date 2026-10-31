@@ -3,16 +3,16 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** Stage 2 in progress. Steps 1-6 DONE.
-  **Next: Stage 2, Step 7** (Docker rebuild, end-to-end check, Stage 2 gate, docs).
-- **Last updated:** 2026-10-31
+- **Current stage:** **Stage 2 DONE** (Steps 1-7; gate PASS 10/10, note 0016).
+  **Next: Stage 3** (strategy interface, profiler, router, headings and tables).
+- **Last updated:** 2026-11-01
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** Step 6: 136 passed, 7 deselected (normal run); 7 passed with `-m slow`
-  (5 embedder, 2 real OpenAI). Step 5: 112 passed, 5 deselected.
-  Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
-  Decision notes 0001-0015 (0008 is "Proposed").
-- **Branch:** Step 6 on `stage2-step6-answer` (owner commits after checks).
+- **Tests:** Step 7: 163 passed, 7 deselected (normal run). Step 6: 136 passed,
+  7 deselected; 7 passed with `-m slow` (5 embedder, 2 real OpenAI). Step 5: 112 passed,
+  5 deselected. Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
+  Decision notes 0001-0016 (0008 is "Proposed").
+- **Branch:** Step 7 on `stage2-step7-gate` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -21,7 +21,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | --- | --- | --- |
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
-| 2 | Baseline RAG | In progress (Steps 1-6 done) |
+| 2 | Baseline RAG | Done (gate 10/10, note 0016) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
@@ -31,8 +31,9 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | 9 | Hardening, deploy, README | Not started |
  
 Parallel task: evaluation question set. **Deferred to Stage 4 (owner's decision).**
-`eval/questions/` is empty. `eval/question_format_example.json` shows the format
-(made-up examples, not real questions). At Stage 4: LLM drafts questions in that
+`eval/questions/paper_01.json` holds the 10 Stage 2 gate questions (evidence filled and
+verified by the owner; used for the Stage 2 gate, note 0016).
+`eval/question_format_example.json` shows the format (made-up examples, not real questions). At Stage 4: LLM drafts questions in that
 format, owner verifies each against the PDF and sets `"verified": true`.
  
 ## Stage 2 plan (approved)
@@ -51,13 +52,35 @@ format, owner verifies each against the PDF and sets `"verified": true`.
    measured scores), injection-safe prompt, LLM behind a seam with a fake for tests
    (owner chose OpenAI gpt-4o-mini, threshold 0.55) [Done, note 0015]
 7. Docker rebuild, end-to-end check, Stage 2 gate, decision notes, docs; measure the
-   first-upload model load time after a restart (note 0013 known limit) [Next]
+   first-upload model load time after a restart (note 0013 known limit) [Done, note 0016]
 
 ## Stage 2 gate
-- The owner writes 10 hand-verified questions for paper_01 in the eval format before
-  Step 7 (option A, assumed).
+| Gate item | Result |
+| --- | --- |
+| >= 8/10 hand-verified questions cite the right page | Done: 10/10 cited_ok, 10/10 evidence in top-5, PASS (note 0016) |
+| Off-topic question answered "not found" | Done |
+| Prompt injection not followed | Done: PWNED slow test |
+| Embedding cache: no re-embedding of stored work | Done: cache tests |
+| Upload -> ingest -> answer works | Done: integration test |
+| Full stack in Docker | Done: Docker end-to-end check |
+
 - A page citation counts as correct when the evidence page is inside
   page_start..page_end of the cited chunk.
+- Questions: `eval/questions/paper_01.json` (q01-q10; q10 has two evidence entries),
+  evidence filled and `"verified": true` set by the owner.
+- Check: `python scripts/gate_check.py eval/questions/paper_01.json --document-id ID --k 5`.
+  Rules in `src/adaptrag/evaluation/gate.py` (tests in `tests/test_gate.py`):
+  cited_ok = found AND a citation's page range holds an evidence page (the gate counts
+  this); retrieved_ok = an evidence text is inside a top-k source after casefold and
+  whitespace collapsing (reported, not part of the gate). Unverified entries are
+  skipped; verified entries with a null page or "TO FILL" text are refused. PASS needs
+  at least 10 scored questions and >= 8/10 cited_ok.
+- Gate result (owner's run; gpt-4o-mini, k=5, min_score 0.55, document 1 = paper_01):
+  10/10 cited the right page, 10/10 evidence in top-5, PASS. q10 cited pages 6 and 9.
+- Latency: answer mean 1.79 s, max 2.80 s (`gate_check.py`, local, model load
+  excluded). First query after an API restart 3.23 s vs 0.035 s afterwards (Docker,
+  `/query`), i.e. the model load costs about 3.2 s once per process.
+  Tokens per answer: 1567-1999 input, 14-129 output. Money cost: owner's OpenAI usage page.
 
 ## Stage 2 failure-analysis notes
 - Rank 1 is not always the answering chunk (GAN question: rank 3).
@@ -65,6 +88,15 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   unanswerable questions score 0.61-0.70, close to answerable ones.
 - Top-k compensated a retrieval miss: for the GAN question the answering chunk was
   rank 3, and the LLM cited source 3.
+- Parser text quality: words are glued at line breaks ("shownin", "Thedecoder",
+  "Anattention", "withkernel", "transformermodel"), and page-footer numbers and figure
+  captions stay inside chunk text. This matters for BM25 (Stage 5: glued words are
+  different tokens) and for evidence matching. Stage 3 parser work.
+- Gate caveats (note 0016): one clean dev paper; 10 mostly single-fact questions drafted
+  by an LLM; evidence phrases copied from our own parsed chunks, so retrieved_ok is easy
+  here; lenient rule (any citation's page range containing an evidence page counts,
+  extra citations not penalised; q02 cited three chunks); one run. Stage 4 must build
+  questions and evidence more independently and measure citation precision.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -167,6 +199,19 @@ format, owner verifies each against the PDF and sets `"verified": true`.
      0.55); no LLM call.
    Docker `POST /documents/1/answer` returned the same answer and citations.
    Both not-found layers worked on real data. Money cost and latency: Step 7.
+7. **Docker rebuild, end-to-end check, Stage 2 gate:**
+   `eval/questions/paper_01.json` (10 questions, evidence filled and verified by the owner).
+   `src/adaptrag/evaluation/gate.py`: pure scoring rules and loader (`normalise`,
+   `cited_ok`, `retrieved_ok`, `gate_passed`, `load_questions`). `scripts/gate_check.py`
+   runs the same checks and pipeline as POST /answer for every verified question, times
+   each `answer_question` call with `time.perf_counter()` (model load excluded), prints
+   one line per question and the totals. `tests/test_gate.py` (unit).
+   Tests: 163 passed, 7 deselected (normal run).
+   Gate result: 10/10 cited the right page, 10/10 evidence in top-5, PASS (gpt-4o-mini,
+   k=5, min_score 0.55, document 1 = paper_01); q10 cited pages 6 and 9.
+   Latency: answer mean 1.79 s, max 2.80 s; first query after an API restart 3.23 s vs
+   0.035 s afterwards (Docker, model load about 3.2 s once). Tokens per answer 1567-1999
+   input, 14-129 output. Note 0016. **Stage 2 done.**
 
 ## Stage 1 steps
 | Step | What | Status |
@@ -320,9 +365,13 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   two-layer not-found (score < 0.55, then the model's NOT_FOUND), numbered sources
   mapped to pages by our code, untrusted-source prompt with tag escaping, `/answer`
   separate from `/query`, 503 without a key, 502 on LLM failure.
+- Stage 2 gate (note 0016): cited_ok scored, retrieved_ok reported only, >= 10 scored
+  questions and >= 80% cited_ok, only verified entries, an LLM failure stops the run.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
-  IEEE-style headings (paper_05) not covered by the drafted rules.
+  IEEE-style headings (paper_05) not covered by the drafted rules. pymupdf4llm 2.0 is
+  already installed as a dependency of pymupdf 2.0, so the comparison needs no new
+  dependency.
 - Only one real two-column sample (paper_02). Add an ACL or IEEE two-column paper.
 - Page furniture (permission notices, footnotes, page numbers, arXiv stamp, figure
   labels) comes through as paragraphs. Hyphenated line breaks become "trans- former".
@@ -336,8 +385,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - 3 of 213 sample chunks exceed 512 tokens and are truncated by the model (note 0012).
 - Dev database documents 1 and 2 were uploaded before jobs existed (no job, status uploaded).
 - A model with a different number of dimensions needs a migration (vector(384), note 0013).
-- The first upload after a restart loads the model during the request (seconds; the
-  dependency runs before the endpoint, even for rejected or duplicate uploads).
+- The first upload after a restart loads the model during the request (measured about
+  3.2 s: first `/query` 3.23 s vs 0.035 s afterwards; the dependency runs before the
+  endpoint, even for rejected or duplicate uploads).
 - The model downloads from Hugging Face on first use into the `hf-cache` volume (first
   upload in a fresh Docker setup needs network access).
 - Exact search reads every vector: fine only at small scale (a few hundred chunks).
@@ -352,8 +402,9 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
 - Not-found threshold 0.55 comes from the 8 measured dev questions only; recalibrate in
-  Stage 4. Answers may vary between runs. About 1,700-1,900 input tokens per answer;
-  money cost and latency measured in Step 7.
+  Stage 4. Answers may vary between runs. Gate run: 1567-1999 input and 14-129 output
+  tokens per answer, mean 1.79 s and max 2.80 s per answer; money cost on the owner's
+  OpenAI usage page.
 - gpt-4o-mini may follow the citation and NOT_FOUND rules less reliably than newer
   models (watch the slow test and the gate questions); availability and price must be
   checked by the owner on OpenAI's site.
@@ -388,12 +439,14 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 9. Why does the not-found check need two layers?
 10. Why does our code map citations to pages instead of the model?
 11. Why is /answer separate from /query?
+12. Why does the gate score cited_ok but only report retrieved_ok?
+13. How were the gate questions built, and why might they be biased toward this system?
 
 ## Open items / notes for the next chat
-- Owner: `pip install -e ".[dev]"` (new `openai` dependency), put the key in `.env`,
-  run the Step 6 checks, fill the placeholders, commit, review, merge.
-- Step 7: Docker rebuild (the image needs `openai`; pass the key through `.env`),
-  end-to-end check, Stage 2 gate (10 hand-verified paper_01 questions).
+- Stage 2 is done. Owner: commit Step 7 on `stage2-step7-gate`, review, merge.
+- Next: Stage 3 (strategy interface, profiler, router, headings and tables). Start with
+  a Stage 3 plan for approval; decide the dev/test document split before router rules.
+  Parser fixes for glued words and page furniture belong here (failure-analysis notes).
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
