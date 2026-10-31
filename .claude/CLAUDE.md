@@ -1,7 +1,7 @@
 # CLAUDE.md: AdaptRAG project guide
  
 For any coding agent or assistant working in this repo. Read this first.
-Also read `CONTEXT_HANDOFF.md` (how to teach the owner) and `PROGRESS.md` (current state).
+Also read `.claude/PROGRESS.md` (current state).
  
 ## What this project is
 AdaptRAG is a document-aware RAG notebook built with FastAPI. It profiles each
@@ -49,7 +49,7 @@ Decide per component by the cost of changing it later.
 ```
 adaptrag/
 ├── .claude/
-│   ├── claude.md                 # this guide (CLAUDE.md; tracked here, lowercase name)
+│   ├── CLAUDE.md                 # this guide
 │   └── PROGRESS.md               # current state, log, lessons learned
 ├── .github/workflows/ci.yml      # lint, format, mypy, migrations, alembic check, tests
 ├── alembic.ini                   # NO database URL here (env.py reads settings)
@@ -100,8 +100,7 @@ adaptrag/
 ├── docker-compose.yml            # api, migrate (one-off), db (Postgres + volume)
 ├── Dockerfile  pyproject.toml  README.md
 ```
-`.env`, `data/` (sample PDFs, uploads) are gitignored. `CONTEXT_HANDOFF.md` is not in
-the repo (the owner keeps it outside).
+`.env`, `data/` (sample PDFs, uploads) are gitignored.
  
 ## Commands (always use `python -m`, never the bare tool)
 ```bash
@@ -118,11 +117,12 @@ python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for on
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
 python scripts/list_chunk_sets.py                  # stored chunk sets and chunk counts
 ```
-**The routine before every commit** (stops at the first failure; nothing is pushed
+**Owner's routine** before every commit (stops at the first failure; nothing is pushed
 unless everything passes):
 ```bash
 python -m ruff format . && python -m ruff check . --fix && python -m mypy && python -m alembic check && python -m pytest && git add -A && git commit -m "message" && git push
 ```
+Coding agents run only the check chain and commit on their branch; they never push.
 Locally `ruff format .` fixes formatting; CI only checks (`ruff format --check .`).
  
 Migrations:
@@ -262,7 +262,7 @@ Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
 **Status: Stage 2 Step 2 done (chunk storage). Next: Stage 2 Step 3 (embeddings with
 BAAI/bge-small-en-v1.5 behind an Embedder seam).**
-See `PROGRESS.md`.
+See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,
 compare mode, evidence-panel polish. Never cut evaluation, reliability checks
