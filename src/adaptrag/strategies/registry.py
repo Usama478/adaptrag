@@ -8,10 +8,12 @@ from adaptrag.embedding.base import Embedder
 from adaptrag.strategies.base import Strategy
 from adaptrag.strategies.fixed_size import FixedSizeStrategy
 from adaptrag.strategies.recursive import RecursiveStrategy
+from adaptrag.strategies.section_aware import SectionAwareStrategy
 
 STRATEGIES: dict[str, type[Strategy]] = {
     "fixed_size": FixedSizeStrategy,
     "recursive": RecursiveStrategy,
+    "section_aware": SectionAwareStrategy,
 }
 
 # Every document uses this strategy until Step 5 replaces it with the router's choice.
