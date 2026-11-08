@@ -4,6 +4,7 @@ The fake embedder's scores carry no meaning (note 0014): these tests check statu
 response shape, order and limits, not whether the "right" chunk wins.
 """
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -144,6 +145,30 @@ def test_ready_document_without_a_route_returns_409(
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Document needs re-ingestion for the current settings"
+
+
+def test_unregistered_strategy_returns_409_and_logs_a_warning(
+    make_client: ClientFactory, db_engine: Engine, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.WARNING, logger="adaptrag.routes.query")
+    client = make_client()
+    document_id = upload(client, make_pdf_bytes(pages=2))
+    with Session(db_engine) as session:
+        session.get_one(Document, document_id).strategy = "no_such_strategy"
+        session.commit()
+
+    response = ask(client, document_id, question=QUESTION)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Document needs re-ingestion for the current settings"
+    warnings = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "adaptrag.routes.query" and record.levelno == logging.WARNING
+    ]
+    assert len(warnings) == 1
+    assert f"Document {document_id}" in warnings[0]
+    assert "no_such_strategy" in warnings[0]
 
 
 def test_document_embedded_with_another_model_returns_409(make_client: ClientFactory) -> None:

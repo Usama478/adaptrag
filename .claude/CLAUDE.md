@@ -77,7 +77,8 @@ adaptrag/
 │   ├── script.py.mako            # migration template (modern typing, sorted imports)
 │   └── versions/                 # 2eded5ee7afc documents, 1b7cc351503c jobs + page_count,
 │                                 # 3b2dd0114f3e chunk_sets + chunks,
-│                                 # 5c8e1a7d4f2b vector extension + chunk_embeddings
+│                                 # 5c8e1a7d4f2b vector extension + chunk_embeddings,
+│                                 # 8f3a6c1e9d47 document routing columns
 ├── docker/postgres/init/01-create-test-db.sql   # creates adaptrag_test on first init
 ├── docs/decisions/               # 0001 stack, 0002 upload validation, 0003 hashing/storage,
 │                                 # 0004 Postgres/SQLAlchemy/Alembic, 0005 parsed block shape,
@@ -89,7 +90,7 @@ adaptrag/
 │                                 # 0016 Stage 2 gate, 0017 evaluation corpus split,
 │                                 # 0018 Markdown parser (pymupdf4llm),
 │                                 # 0019 strategy interface and registry,
-│                                 # 0020 splitting strategies
+│                                 # 0020 splitting strategies, 0021 profiler and router
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -106,6 +107,7 @@ adaptrag/
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
 │   ├── parser_report.py          # old vs Markdown parser per PDF (dev folders only)
+│   ├── profile_report.py         # document profile of every PDF (dev folders only)
 │   ├── query.py                  # top-k chunks for a question (real embedder), like the API
 │   ├── reingest.py               # new job for an existing document, real embedder;
 │   │                             # --file PATH restores a missing upload (SHA-256 checked)
@@ -117,7 +119,7 @@ adaptrag/
 │   ├── models.py                 # Base (naming convention), Document, Job, ChunkSet, Chunk,
 │   │                             # ChunkEmbedding, EMBEDDING_DIMENSION (384)
 │   ├── storage.py                # compute_sha256(), upload_path(), save_upload()
-│   ├── ingest.py                 # run_ingest_job(): parse, chunk, save_chunk_set(),
+│   ├── ingest.py                 # run_ingest_job(): parse, route, chunk, save_chunk_set(),
 │   │                             # embed_chunk_set(), job outcome
 │   ├── vectorstore/
 │   │   └── pgvector.py           # embeddings_exist(), save_embeddings(), search() (all vector SQL)
@@ -137,6 +139,9 @@ adaptrag/
 │   ├── retrieval/
 │   │   ├── results.py            # ScoredChunk (chunk + pages + score = 1 - cosine distance)
 │   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
+│   ├── routing/
+│   │   ├── profile.py            # DocumentProfile, profile_document() (measured signals)
+│   │   └── router.py             # RouteDecision, route() (ordered first-match rules, note 0021)
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
 │   │   ├── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
@@ -146,7 +151,7 @@ adaptrag/
 │   │   └── segments.py           # chunk_prose(), chunk_table(), chunk_blocks() (shared rules)
 │   ├── strategies/
 │   │   ├── base.py               # Strategy ABC: name, params, chunk(), default dense retrieve()
-│   │   ├── registry.py           # STRATEGIES, DEFAULT_STRATEGY, build_strategy()
+│   │   ├── registry.py           # STRATEGIES, build_strategy()
 │   │   ├── fixed_size.py         # FixedSizeStrategy, PARAMS (the fixed-size settings)
 │   │   ├── recursive.py          # RecursiveStrategy (paragraph and sentence cuts, tables apart)
 │   │   └── section_aware.py      # SectionAwareStrategy (one section per chunk, heading prefix)
@@ -164,7 +169,7 @@ adaptrag/
 │   └── routes/
 │       ├── health.py             # GET /health (liveness)
 │       ├── ready.py              # GET /ready (readiness: database reachable)
-│       ├── documents.py          # POST /documents
+│       ├── documents.py          # POST /documents, GET /documents/{id}
 │       ├── jobs.py               # GET /jobs/{id}
 │       ├── query.py              # POST /documents/{id}/query
 │       └── answer.py             # POST /documents/{id}/answer
@@ -186,6 +191,8 @@ adaptrag/
 │   ├── test_splitter.py          # splitter wrapper and its offsets (unit)
 │   ├── test_recursive_strategy.py     # RecursiveStrategy (unit)
 │   ├── test_section_aware_strategy.py # SectionAwareStrategy (unit)
+│   ├── test_profile.py           # document profile signals (unit)
+│   ├── test_router.py            # router rules and reasons (unit)
 │   ├── test_strategy_extensibility.py # test-only strategy through ingest and /query (database)
 │   ├── test_import_order.py      # each module imports in a fresh interpreter (no import loops)
 │   ├── test_fake_embedder.py     # fast
@@ -223,6 +230,7 @@ python scripts/gate_check.py eval/questions/paper_01.json --document-id ID --k 5
                                                    # (one real LLM call each; costs money)
 python scripts/fetch_corpus.py                     # download missing corpus PDFs, record SHA-256
 python scripts/parser_report.py data/samples       # old vs Markdown parser (dev folders only)
+python scripts/profile_report.py data/samples      # document profiles (dev folders only)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model, real LLM
@@ -296,7 +304,8 @@ once resolved to the wrong Python.
   Normal tests never load a real model; only `slow` tests do (`@pytest.mark.slow`,
   excluded by default through `addopts`, run with `python -m pytest -m slow`). Use
   `FakeEmbedder` elsewhere. Slow test files import `embedding.sentence_transformer`
-  inside a function, so collecting them does not import torch.
+  inside a function, so collecting them does not import torch. Tests that assert exact
+  fixed-size output through ingest use the `route_to_fixed_size` fixture (conftest.py).
 - **Embeddings:** only `embedding/sentence_transformer.py` imports sentence_transformers
   or torch. Device is always `cpu`. Vectors are normalised. Queries get
   `embedding_query_instruction` as a prefix; chunks are embedded as plain text. Get the
@@ -321,6 +330,7 @@ once resolved to the wrong Python.
 - **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
   tests/test_import_order.py).
 - **Splitting:** Only chunking/splitter.py imports langchain_text_splitters.
+- **Routing:** routing rules are only tuned on dev documents (notes 0017, 0021).
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -365,27 +375,33 @@ Done:
 - `POST /documents`: 415 wrong type, 413 too large, 202 new (with `job_id`),
   200 duplicate (existing document and its latest `job_id`, or null)
 - `GET /jobs/{id}`: `{job_id, document_id, status, error}`; 404 if unknown
+- `GET /documents/{id}` (note 0021): `{document_id, filename, size_bytes, status, page_count,
+  profile, strategy, route_rule, route_reason}`, the routing fields null for documents
+  ingested before routing; 404 "Document not found."
 - `POST /documents/{id}/query` (note 0014): body `{question (stripped, 1-1000 chars),
   k = 5 (1-20)}`; 422 invalid body (blank question, k out of range); 404 unknown document;
   409 "Document is not ready (status: <status>)"; 409 "Document needs re-ingestion for the
-  current settings" (no current chunk set, or no vectors for the embedder's model).
+  current settings" (no usable strategy: none stored or not registered; no current chunk
+  set; or no vectors for the embedder's model).
   200: `{document_id, chunk_set_id, model_name, results: [{chunk_id, chunk_index,
   page_start, page_end, score, text}]}`, best first, score = 1 - cosine distance.
   Retrieval only: no LLM, no threshold.
-- `POST /documents/{id}/answer` (note 0015): same body, 422, 404 and 409 as /query;
+- `POST /documents/{id}/answer` (note 0015): same body, 422, 404 and 409 as /query
+  (including 409 needs re-ingestion for a document without a usable strategy);
   503 "Answering is not configured (no API key)."; 502 "The answer service is
   unavailable. Try again later." (LLMError). 200: `{document_id, found, answer,
   citations: [{source, chunk_id, page_start, page_end}], sources: [{source, chunk_id,
   chunk_index, page_start, page_end, score, text}]}`. Not found ("Not found in your
   documents.") when the top score < `retrieval_min_score` (LLM not called) or the LLM
   replies NOT_FOUND.
-Planned: GET /documents/{id}, DELETE /documents/{id}, POST /notebooks,
+Planned: DELETE /documents/{id}, POST /notebooks,
 POST /notebooks/{id}/query, POST /query/compare.
 ## Data model
 Done:
 - Document: id, file_hash (unique), filename, size_bytes, status
   (uploaded / ready / failed; "ready" = parsed, chunked and embedded), page_count
-  (nullable), created_at. Rows made before Step 4 may still say "parsed".
+  (nullable), profile (JSONB), strategy, route_rule, route_reason (all four nullable; null
+  before routing), created_at. Rows made before Step 4 may still say "parsed".
 - Job: id, document_id (FK, ON DELETE CASCADE), status (queued / running /
   succeeded / failed), error (nullable), created_at, finished_at (nullable)
 - ChunkSet: id, document_id (FK, ON DELETE CASCADE), strategy, params (JSONB),
@@ -395,8 +411,7 @@ Done:
 - ChunkEmbedding (`chunk_embeddings`): chunk_id (FK chunks.id, ON DELETE CASCADE),
   model_name String(200), embedding vector(384); primary key (chunk_id, model_name)
   (note 0013)
-Add columns only when they can be filled: title (parser), profile, strategy,
-reason (router). Planned: Notebook, QueryLog.
+Add columns only when they can be filled: title (parser). Planned: Notebook, QueryLog.
 ## Strategy interface (Stage 3)
 Every strategy subclasses `Strategy` (`strategies/base.py`, an `abc.ABC`; note 0019):
 - `name` (`ClassVar[str]`): short, stable id, stored in `chunk_sets.strategy`.
@@ -440,7 +455,7 @@ is a Stage 5 switch.
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 in progress, Step 4 (recursive and section-aware strategies, note 0020).
+**Status: Stage 3 in progress, Step 5 (profiler and router, note 0021).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**

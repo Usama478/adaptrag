@@ -3,6 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import httpx
+import pymupdf
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
@@ -73,3 +74,69 @@ def test_duplicate_creates_only_one_row(make_client: ClientFactory, db_engine: E
     upload(client)
     upload(client)
     assert count_documents(db_engine) == 1
+
+
+# --- GET /documents/{id} ---
+
+
+def make_real_pdf() -> bytes:
+    """A real PDF that ingests successfully (PDF_BYTES above fails parsing)."""
+    doc = pymupdf.open()
+    doc.new_page().insert_text((72, 72), ("word " * 10 + "\n") * 5)
+    data: bytes = doc.tobytes()
+    doc.close()
+    return data
+
+
+def test_get_unknown_document_returns_404(make_client: ClientFactory) -> None:
+    response = make_client().get("/documents/999999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Document not found."
+
+
+def test_get_document_returns_the_stored_route(
+    make_client: ClientFactory, db_engine: Engine
+) -> None:
+    client = make_client()
+    pdf = make_real_pdf()
+    document_id = upload(client, content=pdf, name="paper.pdf").json()["document_id"]
+
+    response = client.get(f"/documents/{document_id}")
+
+    assert response.status_code == 200
+    with Session(db_engine) as session:
+        document = session.get_one(Document, document_id)
+        # Not None, or the equality below would also pass for a document that was never routed.
+        assert document.strategy is not None
+        assert document.profile is not None
+        assert response.json() == {
+            "document_id": document_id,
+            "filename": "paper.pdf",
+            "size_bytes": len(pdf),
+            "status": "ready",
+            "page_count": 1,
+            "profile": document.profile,
+            "strategy": document.strategy,
+            "route_rule": document.route_rule,
+            "route_reason": document.route_reason,
+        }
+
+
+def test_get_document_ingested_before_routing_returns_nulls(
+    make_client: ClientFactory, db_engine: Engine
+) -> None:
+    with Session(db_engine) as session:
+        document = Document(file_hash="e" * 64, filename="old.pdf", size_bytes=100, status="ready")
+        session.add(document)
+        session.commit()
+        document_id = document.id
+
+    response = make_client().get(f"/documents/{document_id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["filename"] == "old.pdf"
+    assert body["status"] == "ready"
+    for field in ("profile", "strategy", "route_rule", "route_reason"):
+        assert field in body
+        assert body[field] is None

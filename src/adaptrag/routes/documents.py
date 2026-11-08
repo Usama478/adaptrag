@@ -1,6 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, UploadFile
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -18,6 +19,20 @@ router = APIRouter()
 PDF_MAGIC = b"%PDF-"
 
 DocumentResponse = dict[str, str | int | bool | None]
+
+
+class DocumentDetail(BaseModel):
+    """One document and its route. The routing fields are null if ingested before routing."""
+
+    document_id: int
+    filename: str
+    size_bytes: int
+    status: str
+    page_count: int | None
+    profile: dict[str, Any] | None
+    strategy: str | None
+    route_rule: str | None
+    route_reason: str | None
 
 
 def find_by_hash(session: Session, file_hash: str) -> Document | None:
@@ -98,3 +113,24 @@ def upload_document(
     engine = get_engine(settings.database_url)
     background_tasks.add_task(run_ingest_job, engine, upload_dir, job.id, embedder)
     return document_response(document, job.id, duplicate=False)
+
+
+@router.get("/documents/{document_id}")
+def get_document(
+    document_id: int, session: Annotated[Session, Depends(get_session)]
+) -> DocumentDetail:
+    """Return one document with the router's decision."""
+    document = session.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    return DocumentDetail(
+        document_id=document.id,
+        filename=document.filename,
+        size_bytes=document.size_bytes,
+        status=document.status,
+        page_count=document.page_count,
+        profile=document.profile,
+        strategy=document.strategy,
+        route_rule=document.route_rule,
+        route_reason=document.route_reason,
+    )

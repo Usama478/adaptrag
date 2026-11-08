@@ -3,7 +3,8 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3, Step 4** (recursive and section-aware strategies, note 0020).
+- **Current stage:** **Stage 3, Step 5** (profiler and router, note 0021).
+  Step 4 done (recursive and section-aware strategies, note 0020).
   Step 3 done (strategy interface and registry, note 0019).
   Step 2 done (universal parser with pymupdf4llm, note 0018). Step 1 done (evaluation
   corpus and frozen dev/test split, note 0017). Stage 2 done
@@ -176,6 +177,11 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    `recursive chunks=531 mean_words=153.0 max_words=200 over_200=0 multi_page=71 table_chunks=125 glued=0`;
    `section_aware chunks=614 mean_words=141.7 max_words=200 over_200=0 multi_page=54 table_chunks=126 glued=0`.
    Strategies clearly differ; no chunk over 200 words; glued words 0.
+5. **Profiler and router:** 5a: document profiler and `scripts/profile_report.py` (353
+   tests). 5b: router rule v1 (370 tests). 5c: migration 8f3a6c1e9d47, ingest routes each
+   upload, routes and scripts use the document's strategy
+   (TO FILL from owner's run: test count after 5c). 5d: `GET /documents/{id}`, guard for
+   unregistered strategies, note 0021 (TO FILL from owner's run: test count after 5d).
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,

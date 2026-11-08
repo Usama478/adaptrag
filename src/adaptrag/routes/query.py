@@ -3,6 +3,7 @@
 Note 0014. No "weak retrieval" threshold here: Step 6 chooses one from measured scores.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -21,8 +22,11 @@ from adaptrag.retrieval.dense import (
     current_chunk_set_id,
     not_ready_message,
 )
-from adaptrag.strategies.registry import build_strategy
+from adaptrag.strategies.base import Strategy
+from adaptrag.strategies.registry import UnknownStrategyError, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -54,6 +58,22 @@ class QueryResponse(BaseModel):
     results: list[QueryResult]
 
 
+def document_strategy(document: Document, embedder: Embedder) -> Strategy:
+    """The document's stored strategy, or a 409 if it cannot be used (/query and /answer)."""
+    # None: ingested before routing existed, so the document has no decision to use.
+    if document.strategy is None:
+        raise HTTPException(status_code=409, detail=NEEDS_REINGESTION)
+    try:
+        return build_strategy(document.strategy, embedder)
+    except UnknownStrategyError:
+        logger.warning(
+            "Document %d has an unregistered strategy %r; it needs re-ingestion",
+            document.id,
+            document.strategy,
+        )
+        raise HTTPException(status_code=409, detail=NEEDS_REINGESTION) from None
+
+
 @router.post("/documents/{document_id}/query")
 def query_document(
     document_id: int,
@@ -68,11 +88,7 @@ def query_document(
     if document.status != "ready":
         raise HTTPException(status_code=409, detail=not_ready_message(document.status))
 
-    # None: ingested before routing existed, so the document has no decision to use.
-    if document.strategy is None:
-        raise HTTPException(status_code=409, detail=NEEDS_REINGESTION)
-
-    strategy = build_strategy(document.strategy, embedder)
+    strategy = document_strategy(document, embedder)
     chunk_set_id = current_chunk_set_id(session, document_id, strategy.name, strategy.params)
     if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, embedder.model_name):
         raise HTTPException(status_code=409, detail=NEEDS_REINGESTION)

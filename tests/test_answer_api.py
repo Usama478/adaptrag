@@ -9,10 +9,13 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 from adaptrag.config import Settings
 from adaptrag.llm.fake import FakeLLM
 from adaptrag.llm.provider import NOT_CONFIGURED, get_app_llm
+from adaptrag.models import Document
 
 ClientFactory = Callable[..., TestClient]
 
@@ -104,6 +107,24 @@ def test_failed_document_returns_409(make_client: ClientFactory) -> None:
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Document is not ready (status: failed)"
+
+
+def test_ready_document_without_a_route_returns_409(
+    make_client: ClientFactory, db_engine: Engine
+) -> None:
+    llm = FakeLLM()
+    client = make_client(llm=llm, retrieval_min_score=PASS_ALL)
+    document_id = upload(client, make_pdf_bytes(pages=2))
+    # Its chunk set and vectors stay in place, so only the missing strategy can cause the 409.
+    with Session(db_engine) as session:
+        session.get_one(Document, document_id).strategy = None
+        session.commit()
+
+    response = ask(client, document_id, question=QUESTION)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Document needs re-ingestion for the current settings"
+    assert llm.calls == 0
 
 
 @pytest.mark.parametrize(
