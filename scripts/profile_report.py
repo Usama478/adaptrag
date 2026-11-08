@@ -14,6 +14,7 @@ from pathlib import Path
 from adaptrag.parsing.blocks import BlockType
 from adaptrag.parsing.pdf import ParseError, parse_pdf
 from adaptrag.routing.profile import profile_document
+from adaptrag.routing.router import route
 
 TEST_SET = (Path(__file__).resolve().parents[1] / "data" / "test_set").resolve()
 
@@ -37,9 +38,12 @@ def main() -> None:
             print(f"{path.name}: REJECTED ({type(exc).__name__}) {exc}")
             continue
 
-        profile = profile_document(doc).to_dict()
-        fields = " ".join(f"{key}={value}" for key, value in profile.items())
+        profile = profile_document(doc)
+        fields = " ".join(f"{key}={value}" for key, value in profile.to_dict().items())
         print(f"{path.name} {fields}")
+
+        decision = route(profile)
+        print(f"  route: {decision.strategy} ({decision.rule}) {decision.reason}")
 
         headings = [block.text for block in doc.blocks if block.block_type is BlockType.HEADING]
         for text in headings[:HEADINGS_SHOWN]:
