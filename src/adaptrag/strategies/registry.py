@@ -12,6 +12,9 @@ STRATEGIES: dict[str, type[Strategy]] = {
     "fixed_size": FixedSizeStrategy,
 }
 
+# Every document uses this strategy until Step 5 replaces it with the router's choice.
+DEFAULT_STRATEGY = "fixed_size"
+
 
 class UnknownStrategyError(LookupError):
     """No strategy is registered under this name."""

@@ -20,8 +20,8 @@ from adaptrag.retrieval.dense import (
     NEEDS_REINGESTION,
     current_chunk_set_id,
     not_ready_message,
-    retrieve_dense,
 )
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
 
 router = APIRouter()
@@ -68,11 +68,12 @@ def query_document(
     if document.status != "ready":
         raise HTTPException(status_code=409, detail=not_ready_message(document.status))
 
-    chunk_set_id = current_chunk_set_id(session, document_id)
+    strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+    chunk_set_id = current_chunk_set_id(session, document_id, strategy.name, strategy.params)
     if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, embedder.model_name):
         raise HTTPException(status_code=409, detail=NEEDS_REINGESTION)
 
-    results = retrieve_dense(session, chunk_set_id, embedder, body.question, body.k)
+    results = strategy.retrieve(session, chunk_set_id, body.question, body.k)
     return QueryResponse(
         document_id=document_id,
         chunk_set_id=chunk_set_id,

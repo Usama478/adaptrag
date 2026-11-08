@@ -45,6 +45,8 @@ from adaptrag.retrieval.dense import (
     current_chunk_set_id,
     not_ready_message,
 )
+from adaptrag.strategies.fixed_size import PARAMS
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
 
 
@@ -96,7 +98,8 @@ def main() -> None:
             raise SystemExit("Document not found.")
         if document.status != "ready":
             raise SystemExit(not_ready_message(document.status))
-        chunk_set_id = current_chunk_set_id(session, document.id)
+        # PARAMS directly: building a strategy needs the model, which loads after these checks.
+        chunk_set_id = current_chunk_set_id(session, document.id, DEFAULT_STRATEGY, PARAMS)
         if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, model_name):
             raise SystemExit(NEEDS_REINGESTION)
 
@@ -105,6 +108,7 @@ def main() -> None:
             settings.embedding_device,
             settings.embedding_query_instruction,
         )
+        strategy = build_strategy(DEFAULT_STRATEGY, embedder)
         llm = get_openai_llm(
             key.get_secret_value(),
             settings.llm_model,
@@ -126,7 +130,7 @@ def main() -> None:
                     chunk_set_id,
                     question.question.strip(),
                     args.k,
-                    embedder,
+                    strategy,
                     llm,
                     settings.retrieval_min_score,
                 )

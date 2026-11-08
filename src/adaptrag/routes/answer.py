@@ -20,6 +20,7 @@ from adaptrag.llm.provider import get_app_llm
 from adaptrag.models import Document
 from adaptrag.retrieval.dense import NEEDS_REINGESTION, current_chunk_set_id, not_ready_message
 from adaptrag.routes.query import QueryRequest
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,8 @@ def answer_document(
     if document.status != "ready":
         raise HTTPException(status_code=409, detail=not_ready_message(document.status))
 
-    chunk_set_id = current_chunk_set_id(session, document_id)
+    strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+    chunk_set_id = current_chunk_set_id(session, document_id, strategy.name, strategy.params)
     if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, embedder.model_name):
         raise HTTPException(status_code=409, detail=NEEDS_REINGESTION)
 
@@ -80,7 +82,7 @@ def answer_document(
             chunk_set_id,
             body.question,
             body.k,
-            embedder,
+            strategy,
             llm,
             settings.retrieval_min_score,
         )

@@ -14,29 +14,16 @@ from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from adaptrag.chunking.chunks import TextChunk
-from adaptrag.chunking.fixed import (
-    DEFAULT_OVERLAP_WORDS,
-    DEFAULT_SIZE_WORDS,
-    STRATEGY_NAME,
-    chunk_fixed_size,
-)
 from adaptrag.embedding.base import Embedder
 from adaptrag.models import Chunk, ChunkSet, Document, Job
 from adaptrag.parsing.pdf import ParseError, parse_pdf
 from adaptrag.storage import upload_path
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist, save_embeddings
 
 logger = logging.getLogger(__name__)
 
 INTERNAL_ERROR = "Processing failed because of an internal error."
-
-# Until the router exists (Stage 3), every document gets the fixed-size control strategy.
-# The same dict is passed to the chunker and stored, so the stored settings are always
-# exactly the settings that were used.
-FIXED_SIZE_PARAMS: dict[str, Any] = {
-    "size_words": DEFAULT_SIZE_WORDS,
-    "overlap_words": DEFAULT_OVERLAP_WORDS,
-}
 
 
 def finish(job: Job, document: Document, succeeded: bool, error: str | None) -> None:
@@ -152,12 +139,13 @@ def run_ingest_job(engine: Engine, upload_dir: Path, job_id: int, embedder: Embe
 
         try:
             parsed = parse_pdf(upload_path(document.file_hash, upload_dir))
-            chunks = chunk_fixed_size(parsed, **FIXED_SIZE_PARAMS)
+            strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+            chunks = strategy.chunk(parsed)
             chunk_set_id, created = save_chunk_set(
                 session,
                 document.id,
-                STRATEGY_NAME,
-                FIXED_SIZE_PARAMS,
+                strategy.name,
+                strategy.params,
                 parsed.parser_version,
                 chunks,
             )

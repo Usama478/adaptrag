@@ -4,10 +4,12 @@ import json
 
 from adaptrag.chunking.fixed import STRATEGY_NAME, chunk_fixed_size
 from adaptrag.embedding.fake import FakeEmbedder
-from adaptrag.ingest import FIXED_SIZE_PARAMS
 from adaptrag.parsing.blocks import BlockType, ParsedBlock, ParsedDocument
 from adaptrag.strategies.fixed_size import FixedSizeStrategy
 from adaptrag.strategies.registry import build_strategy, strategy_names
+
+# Literal on purpose: comparing with strategies/fixed_size.py could never catch a change there.
+FIXED_SIZE_PARAMS = {"size_words": 200, "overlap_words": 40}
 
 
 def words(start: int, stop: int) -> str:

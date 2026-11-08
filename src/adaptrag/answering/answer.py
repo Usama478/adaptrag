@@ -15,10 +15,9 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from adaptrag.answering.prompt import NOT_FOUND_TOKEN, build_prompt
-from adaptrag.embedding.base import Embedder
 from adaptrag.llm.base import LLM
-from adaptrag.retrieval.dense import retrieve_dense
 from adaptrag.retrieval.results import ScoredChunk
+from adaptrag.strategies.base import Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +77,7 @@ def answer_question(
     chunk_set_id: int,
     question: str,
     k: int,
-    embedder: Embedder,
+    strategy: Strategy,
     llm: LLM,
     min_score: float,
 ) -> AnswerResult:
@@ -86,7 +85,7 @@ def answer_question(
 
     Raises LLMError if the LLM fails; the caller decides what the user sees.
     """
-    sources = retrieve_dense(session, chunk_set_id, embedder, question, k)
+    sources = strategy.retrieve(session, chunk_set_id, question, k)
 
     # Layer 1: weak or empty retrieval. The LLM is not called.
     if not sources or sources[0].score < min_score:

@@ -1,16 +1,16 @@
 """Dense retrieval: embed the question, then find the nearest chunk vectors (note 0014).
 
-Only the chunk set that ingestion would create now is searched. Until the router exists
-(Stage 3), that is the fixed-size set with today's params and parser version. An older
-set (other params or parser version) is never searched: the document needs re-ingestion.
+Only the chunk set that ingestion would create now is searched: the caller's strategy
+with its params, and today's parser version. An older set (other params or parser
+version) is never searched: the document needs re-ingestion.
 """
+
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from adaptrag.chunking.fixed import STRATEGY_NAME
 from adaptrag.embedding.base import Embedder
-from adaptrag.ingest import FIXED_SIZE_PARAMS
 from adaptrag.models import ChunkSet
 from adaptrag.parsing.pdf import PARSER_VERSION
 from adaptrag.retrieval.results import ScoredChunk
@@ -29,13 +29,19 @@ def not_ready_message(status: str) -> str:
     return f"Document is not ready (status: {status})"
 
 
-def current_chunk_set_id(session: Session, document_id: int) -> int | None:
-    """The id of the chunk set ingestion would create now for this document, or None."""
+def current_chunk_set_id(
+    session: Session, document_id: int, strategy_name: str, params: dict[str, Any]
+) -> int | None:
+    """The id of the chunk set ingestion would create now with these settings, or None.
+
+    Takes a name and params, not a Strategy: strategies import this module, and the
+    scripts make this check before the embedding model (which a Strategy needs) loads.
+    """
     return session.scalar(
         select(ChunkSet.id).where(
             ChunkSet.document_id == document_id,
-            ChunkSet.strategy == STRATEGY_NAME,
-            ChunkSet.params == FIXED_SIZE_PARAMS,
+            ChunkSet.strategy == strategy_name,
+            ChunkSet.params == params,
             ChunkSet.parser_version == PARSER_VERSION,
         )
     )

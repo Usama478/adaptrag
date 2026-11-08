@@ -16,9 +16,11 @@ from adaptrag.embedding.fake import FakeEmbedder
 from adaptrag.ingest import save_chunk_set
 from adaptrag.llm.fake import FakeLLM
 from adaptrag.models import EMBEDDING_DIMENSION, Chunk, Document
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import save_embeddings
 
 EMBEDDER = FakeEmbedder(dimension=EMBEDDING_DIMENSION)
+STRATEGY = build_strategy(DEFAULT_STRATEGY, EMBEDDER)
 TEXTS = ["alpha chunk", "beta chunk", "gamma chunk"]
 QUESTION = "Which chunk?"
 PASS_ALL = -1.0
@@ -56,7 +58,7 @@ def test_weak_retrieval_is_not_found_and_llm_not_called(db_engine: Engine) -> No
         chunk_set_id, _ = add_embedded_set(session)
 
         result = answer_question(
-            session, chunk_set_id, QUESTION, 3, EMBEDDER, llm, min_score=BLOCK_ALL
+            session, chunk_set_id, QUESTION, 3, STRATEGY, llm, min_score=BLOCK_ALL
         )
 
     assert result.found is False
@@ -72,7 +74,7 @@ def test_no_vectors_is_not_found_and_llm_not_called(db_engine: Engine) -> None:
         chunk_set_id, _ = add_embedded_set(session, model_name="another-model")
 
         result = answer_question(
-            session, chunk_set_id, QUESTION, 3, EMBEDDER, llm, min_score=PASS_ALL
+            session, chunk_set_id, QUESTION, 3, STRATEGY, llm, min_score=PASS_ALL
         )
 
     assert result.found is False
@@ -88,7 +90,7 @@ def test_llm_not_found_reply_is_not_found(db_engine: Engine, reply: str) -> None
         chunk_set_id, _ = add_embedded_set(session)
 
         result = answer_question(
-            session, chunk_set_id, QUESTION, 3, EMBEDDER, llm, min_score=PASS_ALL
+            session, chunk_set_id, QUESTION, 3, STRATEGY, llm, min_score=PASS_ALL
         )
 
     assert llm.calls == 1
@@ -103,7 +105,7 @@ def test_citations_are_deduplicated_in_order_and_invalid_ones_dropped(db_engine:
         chunk_set_id, page_of = add_embedded_set(session)
 
         result = answer_question(
-            session, chunk_set_id, QUESTION, 3, EMBEDDER, llm, min_score=PASS_ALL
+            session, chunk_set_id, QUESTION, 3, STRATEGY, llm, min_score=PASS_ALL
         )
 
     assert result.found is True
@@ -130,7 +132,7 @@ def test_answer_without_citation_is_returned_with_a_warning(
 
         with caplog.at_level(logging.WARNING, logger="adaptrag.answering.answer"):
             result = answer_question(
-                session, chunk_set_id, QUESTION, 3, EMBEDDER, llm, min_score=PASS_ALL
+                session, chunk_set_id, QUESTION, 3, STRATEGY, llm, min_score=PASS_ALL
             )
 
     assert result.found is True

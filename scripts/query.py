@@ -22,8 +22,9 @@ from adaptrag.retrieval.dense import (
     NEEDS_REINGESTION,
     current_chunk_set_id,
     not_ready_message,
-    retrieve_dense,
 )
+from adaptrag.strategies.fixed_size import PARAMS
+from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
 
 PREVIEW_CHARS = 150
@@ -55,7 +56,8 @@ def main() -> None:
             raise SystemExit("Document not found.")
         if document.status != "ready":
             raise SystemExit(not_ready_message(document.status))
-        chunk_set_id = current_chunk_set_id(session, document.id)
+        # PARAMS directly: building a strategy needs the model, which loads after these checks.
+        chunk_set_id = current_chunk_set_id(session, document.id, DEFAULT_STRATEGY, PARAMS)
         if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, model_name):
             raise SystemExit(NEEDS_REINGESTION)
 
@@ -64,7 +66,8 @@ def main() -> None:
             settings.embedding_device,
             settings.embedding_query_instruction,
         )
-        results = retrieve_dense(session, chunk_set_id, embedder, question, args.k)
+        strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+        results = strategy.retrieve(session, chunk_set_id, question, args.k)
 
     print(f"document {document.id} ({document.filename}), chunk set {chunk_set_id}, {model_name}")
     for rank, result in enumerate(results, start=1):
