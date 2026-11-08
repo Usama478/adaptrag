@@ -27,6 +27,8 @@ dependencies = [
     # Official OpenAI client for answers: retries, timeouts, typed responses (note 0015).
     # 1.66 is the first release with the Responses API (client.responses.create).
     "openai>=1.66",
+    # well-tested recursive splitter for the recursive and section-aware strategies (Stage 3 Step 4)
+    "langchain-text-splitters>=1.1.3",
 ]
 
 [project.optional-dependencies]
