@@ -86,6 +86,7 @@ heading rules, but they missed IEEE-style headings and would be more code to own
   models." in ResNet.
 - The Stage 2 glued words appear in neither parser's output nor in any strategy's chunks
   (Step 4 chunk report: 0 for all three); their origin is unexplained, but they no longer
-  occur.
+  occur. Correction: that check covered only the 5 Stage 2 tokens, so it does not show that
+  glued words are gone. "theWMT" was found in a paper_01 chunk in Step 6 (note 0022).
 - Stage 2 gate evidence strings were copied from 0.1.0 chunks and may no longer match the
   new text.

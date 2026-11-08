@@ -60,6 +60,8 @@ environment variables are set; we set none.
   ```
   Chunking time for all 9 documents: about 0.004 s (fixed), 0.010 s (recursive), 0.009 s
   (section_aware).
+- Correction: `glued=0` above covers only the 5 Stage 2 tokens, so it does not show that
+  glued words are gone. "theWMT" was found in a paper_01 chunk in Step 6 (note 0022).
 - Same 200-word budget, but respecting boundaries makes chunks smaller on average (198.2 vs
   153.0 vs 141.7 words), so the evaluation compares boundary placement and resulting chunk
   size together.

@@ -3,18 +3,12 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3, Step 5** (profiler and router, note 0021).
-  Step 4 done (recursive and section-aware strategies, note 0020).
-  Step 3 done (strategy interface and registry, note 0019).
-  Step 2 done (universal parser with pymupdf4llm, note 0018). Step 1 done (evaluation
-  corpus and frozen dev/test split, note 0017). Stage 2 done
-  (Steps 1-7; gate PASS 10/10, note 0016).
+- **Current stage:** **Stage 3 DONE** (gate PASS, note 0022). Next: **Stage 4** (mini
+  evaluation). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
 - **Last updated:** 2026-11-09
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** Step 7: 163 passed, 7 deselected (normal run). Step 6: 136 passed,
-  7 deselected; 7 passed with `-m slow` (5 embedder, 2 real OpenAI). Step 5: 112 passed,
-  5 deselected. Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
+- **Tests:** 379 passed, 7 deselected (normal run).
   Decision notes 0001-0016 (0008 is "Proposed").
 - **Branch:** Stage 3 Step 4 on `stage3-step4-splitters` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
@@ -26,7 +20,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
 | 2 | Baseline RAG | Done (gate 10/10, note 0016) |
-| 3 | Strategy interface, profiler, router (+ headings, tables) | In progress |
+| 3 | Strategy interface, profiler, router (+ headings, tables) | Done |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
 | 6 | Full evaluation | Not started |
@@ -70,6 +64,20 @@ Steps:
 
 Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules (note
 0008 stays Proposed, superseded by pymupdf4llm unless the evaluation shows a need).
+
+## Stage 3 gate
+| Item | Result |
+| --- | --- |
+| One test per router rule | `test_router.py` (17 tests) |
+| Profile signals checked on dev | `scripts/profile_report.py` on 9 dev documents |
+| Extensibility (one file + one registry line) | `test_strategy_extensibility.py` |
+| Reason strings are sentences | e.g. "Chose section-aware chunking because 26 headings were found and 85% are numbered like a paper's outline." |
+| Dev/test split in the repo | `eval/corpus.json` (note 0017) |
+| Headings and tables detected | 185 headings, 49 tables on dev (note 0018) |
+| Strategies differ | chunk report: 482 / 531 / 614 chunks (fixed_size / recursive / section_aware, note 0020) |
+| Docker end to end | upload of paper_07 -> job succeeded -> `GET /documents/6` shows profile, section_aware, numbered_outline and reason -> `/query` top 3 from page 3 (scores 0.853, 0.849, 0.835) including the parameter table |
+| All dev documents routed | 9/9 succeeded; section_aware 8, recursive 1 (doc_08); 31.2 s total including model load (`scripts/ingest_folder.py`) |
+| Stage 2 gate on routed paper_01 | cited the right page 9/10, evidence in top-5 8/10, PASS |
 
 ## Stage 2 plan (approved)
 1. `TextChunk` + fixed-size chunker, 200/40 words, bge-small chosen [Done, note 0010]
@@ -180,8 +188,12 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 5. **Profiler and router:** 5a: document profiler and `scripts/profile_report.py` (353
    tests). 5b: router rule v1 (370 tests). 5c: migration 8f3a6c1e9d47, ingest routes each
    upload, routes and scripts use the document's strategy
-   (TO FILL from owner's run: test count after 5c). 5d: `GET /documents/{id}`, guard for
-   unregistered strategies, note 0021 (TO FILL from owner's run: test count after 5d).
+   (374 tests). 5d: `GET /documents/{id}`, guard for
+   unregistered strategies, note 0021 (379 tests).
+6. **End-to-end check and gate:** `scripts/ingest_folder.py` runs the real pipeline over a
+   dev folder. Docker rebuilt; end-to-end check on paper_07. 9 dev documents routed
+   (8 section_aware, 1 recursive). Stage 2 gate re-run on the routed paper_01: 9/10 PASS
+   (note 0022). Tests: 379 passed, 7 deselected. **Stage 3 done.**
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -480,8 +492,7 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - The model downloads from Hugging Face on first use into the `hf-cache` volume (first
   upload in a fresh Docker setup needs network access).
 - Exact search reads every vector: fine only at small scale (a few hundred chunks).
-- Query searches only the fixed-size chunk set until the router exists (Stage 3); one
-  document per query until notebooks (Stage 7).
+- One document per query until notebooks (Stage 7).
 - The first query after a restart also loads the model (dependency runs first, even for
   404/409 answers).
 - `FakeEmbedder` scores are meaningless: query tests check shape and order only; ranking
@@ -492,8 +503,6 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
-- Scripts pair DEFAULT_STRATEGY with fixed_size PARAMS for the early chunk-set check; fix
-  in Step 5 when each document stores its own strategy (note 0019).
 - Not-found threshold 0.55 comes from the 8 measured dev questions only; recalibrate in
   Stage 4. Answers may vary between runs. Gate run: 1567-1999 input and 14-129 output
   tokens per answer, mean 1.79 s and max 2.80 s per answer; money cost on the owner's
@@ -511,6 +520,16 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - False headings create false sections in the section-aware strategy (note 0020).
 - Section-aware differs from recursive in boundaries AND context (the prefix), so Stage 4
   cannot separate the two; a Stage 5 switch could (note 0020).
+- Evidence locations: q02's fact appears on pages 3 and 5, but the gate's evidence lists
+  only page 3, so a correct answer citing page 5 is a miss. Stage 4 questions must allow
+  several evidence locations (note 0022).
+- Glued words still occur with parser 0.2.0 ("theWMT" in a paper_01 chunk, which made q08's
+  retrieved_ok false). The Step 4 check only looked for the 5 Stage 2 tokens. Stage 4 needs
+  a general detector (note 0022).
+- Chunks over 512 tokens after routing: paper_01 1/56, paper_02 2/94, paper_05 1/30, MTEB
+  36/160 (22%). Table rows turn into far more tokens than words, so the end of large table
+  chunks is not embedded. Candidate Stage 4 fix: measure table chunks in tokens (note 0022).
+- The three scripts exit with a traceback on an unregistered strategy name.
 ## Future stretch ("Stage 10", after Stage 6, tuned on dev documents only)
 - Semantic chunking (owner's own binary-search boundary method).
 - LLM-guided chunking.
@@ -552,8 +571,14 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    ingest.py?
 6. Why do we compute splitter offsets ourselves, and why does section-aware group by
    heading_path instead of using MarkdownHeaderTextSplitter?
+8. What did the Stage 3 gate show, and why can't 9/10 versus 10/10 tell you which strategy
+   is better?
 
 ## Open items / notes for the next chat
+- Stage 4 plan first: questions for dev documents built more independently, several
+  evidence locations per question, Recall@5 and MRR per strategy, decision on
+  machine-verified questions.
+- Token budget for table chunks.
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.

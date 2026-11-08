@@ -90,7 +90,8 @@ adaptrag/
 │                                 # 0016 Stage 2 gate, 0017 evaluation corpus split,
 │                                 # 0018 Markdown parser (pymupdf4llm),
 │                                 # 0019 strategy interface and registry,
-│                                 # 0020 splitting strategies, 0021 profiler and router
+│                                 # 0020 splitting strategies, 0021 profiler and router,
+│                                 # 0022 Stage 3 gate
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -104,6 +105,7 @@ adaptrag/
 │   ├── chunk_report.py           # every strategy per PDF, --show compares chunks (dev only)
 │   ├── fetch_corpus.py           # download missing corpus PDFs, record SHA-256, print counts
 │   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
+│   ├── ingest_folder.py          # real pipeline over a folder, prints routes (dev folders only)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
 │   ├── parser_report.py          # old vs Markdown parser per PDF (dev folders only)
@@ -219,6 +221,7 @@ python scripts/check_pdfs.py data/samples          # parse every sample PDF
 python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for one page
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
 python scripts/chunk_report.py data/samples [--show NAME]   # compare all strategies (dev folders only)
+python scripts/ingest_folder.py data/samples       # ingest and route every PDF (real model, dev folders only)
 python scripts/list_chunk_sets.py                  # stored chunk sets, chunk and embedding counts
 python scripts/list_documents.py                   # documents, status, upload file present?
 python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real model) for a document
@@ -455,7 +458,8 @@ is a Stage 5 switch.
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 in progress, Step 5 (profiler and router, note 0021).
+**Status: Stage 3 done (profiler, router, three strategies; gate PASS, note 0022).
+Next: Stage 4 (mini evaluation).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**
