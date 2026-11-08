@@ -3,8 +3,9 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3, Step 2** (universal parser with pymupdf4llm, note 0018).
-  Step 1 done (evaluation corpus and frozen dev/test split, note 0017). Stage 2 done
+- **Current stage:** **Stage 3, Step 3** (strategy interface and registry, note 0019).
+  Step 2 done (universal parser with pymupdf4llm, note 0018). Step 1 done (evaluation
+  corpus and frozen dev/test split, note 0017). Stage 2 done
   (Steps 1-7; gate PASS 10/10, note 0016).
 - **Last updated:** 2026-11-08
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
@@ -158,6 +159,11 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    0 -> 185; tables 0 -> 49; hyphen breaks 927 -> 15; digit-only blocks 133 -> 22 (all on
    MTEB fallback pages); fallback pages: paper_09 [4, 20, 22], others none.
    Tests: 255 passed, 7 deselected.
+3. **Strategy interface and registry:** 3a: `Strategy` ABC and explicit-dict registry
+   (261 tests). 3b: fixed-size strategy registered (265 tests). 3c: ingest, `/query`,
+   `/answer` and scripts go through the registry; import loop removed (270 tests).
+   3d: extensibility tests and note 0019.
+   Tests: 272 passed, 7 deselected.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -468,6 +474,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
+- Scripts pair DEFAULT_STRATEGY with fixed_size PARAMS for the early chunk-set check; fix
+  in Step 5 when each document stores its own strategy (note 0019).
 - Not-found threshold 0.55 comes from the 8 measured dev questions only; recalibrate in
   Stage 4. Answers may vary between runs. Gate run: 1567-1999 input and 14-129 output
   tokens per answer, mean 1.79 s and max 2.80 s per answer; money cost on the owner's
@@ -515,6 +523,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 3. Why is blocks_from_markdown a pure function, and why test it with strings instead of
    PDFs?
 4. Why a per-page plain-text fallback, and why did the word-counting method matter?
+5. Why an abc.ABC for strategies instead of a Protocol, and why must dense.py not import
+   ingest.py?
 
 ## Open items / notes for the next chat
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9

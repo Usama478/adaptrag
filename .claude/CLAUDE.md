@@ -42,6 +42,8 @@ Decide per component by the cost of changing it later.
     through `Depends(get_app_embedder)`, tests override it with `FakeEmbedder`.
   - LLM: code receives an `LLM` (`llm/base.py`); routes get it through
     `Depends(get_app_llm)`, tests override it with `FakeLLM` (note 0015).
+  - Strategies: code receives a Strategy from build_strategy(name, embedder); adding one =
+    one new file in strategies/ + one line in STRATEGIES (note 0019).
 ## Tech stack
 - Python 3.11, FastAPI, Uvicorn, pydantic-settings, python-multipart
 - PostgreSQL 17 with pgvector (Docker image `pgvector/pgvector:pg17`, also in CI),
@@ -85,7 +87,8 @@ adaptrag/
 │                                 # 0012 embedder, 0013 vector storage (pgvector),
 │                                 # 0014 dense retrieval, 0015 answer generation,
 │                                 # 0016 Stage 2 gate, 0017 evaluation corpus split,
-│                                 # 0018 Markdown parser (pymupdf4llm)
+│                                 # 0018 Markdown parser (pymupdf4llm),
+│                                 # 0019 strategy interface and registry
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -135,6 +138,10 @@ adaptrag/
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
 │   │   └── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
+│   ├── strategies/
+│   │   ├── base.py               # Strategy ABC: name, params, chunk(), default dense retrieve()
+│   │   ├── registry.py           # STRATEGIES, DEFAULT_STRATEGY, build_strategy()
+│   │   └── fixed_size.py         # FixedSizeStrategy, PARAMS (the fixed-size settings)
 │   ├── embedding/
 │   │   ├── base.py               # Embedder protocol (the seam)
 │   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached);
@@ -165,6 +172,10 @@ adaptrag/
 │   ├── test_answer_api.py        # POST /documents/{id}/answer (API, FakeLLM)
 │   ├── test_gate.py              # gate scoring rules and question loader (unit)
 │   ├── test_corpus.py            # corpus manifest and its validation (unit)
+│   ├── test_strategies.py        # Strategy base class and registry (unit)
+│   ├── test_fixed_size_strategy.py    # FixedSizeStrategy matches the fixed-size chunker (unit)
+│   ├── test_strategy_extensibility.py # test-only strategy through ingest and /query (database)
+│   ├── test_import_order.py      # each module imports in a fresh interpreter (no import loops)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 │   ├── test_llm_real.py          # @pytest.mark.slow + skipped without a key: real OpenAI
@@ -294,6 +305,8 @@ once resolved to the wrong Python.
   (slow, skipped without a key). Never log or print the API key. SDK errors and empty
   replies become `LLMError` (route answers 502). The model cites `[N]`; our code maps N
   to chunks and pages, never the model.
+- **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
+  tests/test_import_order.py).
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -371,9 +384,14 @@ Done:
 Add columns only when they can be filled: title (parser), profile, strategy,
 reason (router). Planned: Notebook, QueryLog.
 ## Strategy interface (Stage 3)
-Every strategy implements `chunk(parsed_doc) -> list[TextChunk]` and
-`retrieve(query, doc_id, k) -> list[ScoredChunk]`. Strategies receive their dependencies
-(embedder, LLM client) at construction and expose their params (part of the cache key).
+Every strategy subclasses `Strategy` (`strategies/base.py`, an `abc.ABC`; note 0019):
+- `name` (`ClassVar[str]`): short, stable id, stored in `chunk_sets.strategy`.
+- `params`: property; forms the cache key with `name` and the parser version.
+- The embedder is passed at construction.
+- `chunk(doc) -> list[TextChunk]`.
+- `retrieve(session, chunk_set_id, query, k) -> list[ScoredChunk]` (default: dense, shared
+  in the base class).
+
 A registry maps names to classes.
 Adding a strategy = one new file + one registry line. Starting strategies:
 fixed-size (control), recursive with overlap, section-aware with parent retrieval.
@@ -407,7 +425,7 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 in progress, Step 2 (Markdown parser with pymupdf4llm, note 0018).
+**Status: Stage 3 in progress, Step 3 (strategy interface and registry, note 0019).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**
