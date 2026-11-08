@@ -57,7 +57,9 @@ Decide per component by the cost of changing it later.
   install on the Mac (note 0012)
 - LLM: OpenAI gpt-4o-mini through the official `openai` client (`openai>=1.66`,
   Responses API), chosen by the owner for the lowest cost (note 0015)
-- Planned later: BM25, cross-encoder reranker; possibly pymupdf4llm (Stage 3, compare first)
+- Planned: pymupdf4llm (PDF to Markdown with headings and tables, Stage 3 Step 2),
+  langchain-text-splitters (RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter;
+  Stage 3 Step 4), BM25 and a cross-encoder reranker (Stage 5)
 ## Repo layout
 ```
 adaptrag/
@@ -81,8 +83,9 @@ adaptrag/
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
 │                                 # 0012 embedder, 0013 vector storage (pgvector),
 │                                 # 0014 dense retrieval, 0015 answer generation,
-│                                 # 0016 Stage 2 gate
+│                                 # 0016 Stage 2 gate, 0017 evaluation corpus split
 ├── eval/
+│   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
 │   └── questions/                # real questions, one JSON per paper (Stage 4)
 │       └── paper_01.json         # 10 Stage 2 gate questions (verified by the owner)
@@ -91,6 +94,7 @@ adaptrag/
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
+│   ├── fetch_corpus.py           # download missing corpus PDFs, record SHA-256, print counts
 │   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
@@ -119,6 +123,7 @@ adaptrag/
 │   │   ├── prompt.py             # build_prompt(): system rules + numbered <source> tags
 │   │   └── answer.py             # answer_question(): two-layer not-found, citation mapping
 │   ├── evaluation/
+│   │   ├── corpus.py             # CorpusEntry, parse_corpus(), load_corpus() (manifest rules)
 │   │   └── gate.py               # load_questions(), cited_ok(), retrieved_ok(), normalise(),
 │   │                             # gate_passed() (pure scoring rules, unit-tested)
 │   ├── retrieval/
@@ -155,6 +160,7 @@ adaptrag/
 │   ├── test_answer.py            # answer_question (database, FakeLLM)
 │   ├── test_answer_api.py        # POST /documents/{id}/answer (API, FakeLLM)
 │   ├── test_gate.py              # gate scoring rules and question loader (unit)
+│   ├── test_corpus.py            # corpus manifest and its validation (unit)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 │   ├── test_llm_real.py          # @pytest.mark.slow + skipped without a key: real OpenAI
@@ -187,6 +193,7 @@ python scripts/answer.py DOCUMENT_ID "QUESTION" --k 5  # LLM answer + citations 
 python scripts/gate_check.py eval/questions/paper_01.json --document-id ID --k 5
                                                    # Stage 2 gate: scores verified questions
                                                    # (one real LLM call each; costs money)
+python scripts/fetch_corpus.py                     # download missing corpus PDFs, record SHA-256
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model, real LLM
@@ -290,6 +297,8 @@ once resolved to the wrong Python.
 - Never edit a pushed migration; never force-push.
 - Never add a dependency without a stated reason.
 - Never invent benchmark numbers.
+- Never open, read or inspect files in data/test_set/, and never use test documents to
+  choose rules or thresholds.
 - Commands suggested to the owner always use `python -m <tool>`.
 - Where a real number (measurement, test result, image size) belongs, write
   `TO FILL from owner's run: <what>`. Never estimate.
@@ -370,7 +379,8 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 - Users see short error messages; the server logs the real cause.
 ## Evaluation rules (Stage 4 and 6)
 - Decide the dev/test document split BEFORE writing router rules; write it in the
-  repo. Never tune on test documents. The 5 current samples are dev documents.
+  repo. Never tune on test documents. Split frozen in eval/corpus.json (note 0017): 9 dev in
+  data/samples/, 12 test in data/test_set/.
 - Choose documents for structural diversity (sectioned, short, table-heavy, poorly
   structured), not subject. Keep scanned PDFs out of the benchmark.
 - Question format: see `eval/question_format_example.json` (answer, evidence list of
@@ -386,10 +396,10 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact
-search, gpt-4o-mini answers with page citations; gate 10/10 cited the right page on
-paper_01, PASS, note 0016). Next: Stage 3 (strategy interface, profiler, router,
-headings and tables).**
+**Status: Stage 3 in progress, Step 1 (evaluation corpus and frozen dev/test split, note
+0017). Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
+gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
+PASS, note 0016).**
 See `.claude/PROGRESS.md`.
  
 If time runs short, cut in this order: streaming, document-level index experiment,

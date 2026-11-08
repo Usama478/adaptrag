@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "documents": [
+    {
+      "id": "paper_01",
+      "split": "dev",
+      "category": "sectioned",
+      "title": "Attention Is All You Need",
+      "path": "data/samples/paper_01_single_column.pdf",
+      "source_url": "https://arxiv.org/pdf/1706.03762",
+      "sha256": "bdfaa68d8984f0dc02beaca527b76f207d99b666d31d1da728ee0728182df697"
+    },
+    {
+      "id": "paper_02",
+      "split": "dev",
+      "category": "sectioned",
+      "title": "Deep Residual Learning for Image Recognition",
+      "path": "data/samples/paper_02_two_column.pdf",
+      "source_url": "https://arxiv.org/pdf/1512.03385",
+      "sha256": "1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a"
+    },
+    {
+      "id": "paper_03",
+      "split": "dev",
+      "category": "sectioned",
+      "title": "Generative Adversarial Nets",
+      "path": "data/samples/paper_03_single_column_b.pdf",
+      "source_url": "https://arxiv.org/pdf/1406.2661",
+      "sha256": "ff5819e3a7b713c3bd3107b7de3d51fe0a347aa5d8444f0efdcf2345ef0a8b63"
+    },
+    {
+      "id": "paper_04",
+      "split": "dev",
+      "category": "sectioned",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "path": "data/samples/paper_04_two_column_c.pdf",
+      "source_url": "https://arxiv.org/pdf/1810.04805",
+      "sha256": "5692a5514787a8c6727b4ff3b726a3385798bc68e12138d1d4af83947e2acf6e"
+    },
+    {
+      "id": "paper_05",
+      "split": "dev",
+      "category": "short",
+      "title": "Short Paper: Design and Evaluation of Privacy-preserved Supply Chain System based on Public Blockchain",
+      "path": "data/samples/paper_05_short.pdf",
+      "source_url": "https://arxiv.org/pdf/2004.07606v1",
+      "sha256": "8b2cc64fa40de979d329f21264e8ef936fe0cc5e42c1488f9e9479213a2ffaab"
+    },
+    {
+      "id": "paper_06",
+      "split": "dev",
+      "category": "sectioned",
+      "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+      "path": "data/samples/paper_06_two_column_b.pdf",
+      "source_url": "https://arxiv.org/pdf/1502.03167",
+      "sha256": "bdc69e0b568f41d8d3181cc9077a461f58fcdd1c70c9f49efe60a05ee6109655"
+    },
+    {
+      "id": "paper_07",
+      "split": "dev",
+      "category": "short",
+      "title": "DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter",
+      "path": "data/samples/paper_07_short_b.pdf",
+      "source_url": "https://arxiv.org/pdf/1910.01108",
+      "sha256": "a70c78e2b4db85bfee7696e19829571a3b05f69c616db5c039f6f4eb33b1a0b6"
+    },
+    {
+      "id": "doc_08",
+      "split": "dev",
+      "category": "poorly_structured",
+      "title": "Berkshire Hathaway 2022 Letter to Shareholders",
+      "path": "data/samples/doc_08_poorly_structured.pdf",
+      "source_url": "https://www.berkshirehathaway.com/letters/2022ltr.pdf",
+      "sha256": "a99f263003295b177e8c50ec34f2307093857a357276527e98d5a6205e21a908"
+    },
+    {
+      "id": "paper_09",
+      "split": "dev",
+      "category": "table_heavy",
+      "title": "MTEB: Massive Text Embedding Benchmark",
+      "path": "data/samples/paper_09_table_heavy_b.pdf",
+      "source_url": "https://arxiv.org/pdf/2210.07316",
+      "sha256": "bfd15786180a6546e5bf1361fe42356a884517a6497c27ef6994f444be75e91f"
+    },
+    {
+      "id": "test_01",
+      "split": "test",
+      "category": "sectioned",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "path": "data/test_set/test_01_sectioned.pdf",
+      "source_url": "https://arxiv.org/pdf/2005.11401",
+      "sha256": "23e3249e9a1e75418d82efecab0ea8c4d033b89c93742f63208d47ce01f21233"
+    },
+    {
+      "id": "test_02",
+      "split": "test",
+      "category": "sectioned",
+      "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+      "path": "data/test_set/test_02_sectioned.pdf",
+      "source_url": "https://arxiv.org/pdf/2004.04906",
+      "sha256": "3e67fc1a9977715acf722d85f0b7d124b03715e975f6310a4d6c12094190912f"
+    },
+    {
+      "id": "test_03",
+      "split": "test",
+      "category": "sectioned",
+      "title": "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT",
+      "path": "data/test_set/test_03_sectioned.pdf",
+      "source_url": "https://arxiv.org/pdf/2004.12832",
+      "sha256": "2e487d9b96e3c2e5e286d843e98a066adc0442faa3a6e8ddbd1771221bf9ae14"
+    },
+    {
+      "id": "test_04",
+      "split": "test",
+      "category": "short",
+      "title": "Bag of Tricks for Efficient Text Classification",
+      "path": "data/test_set/test_04_short.pdf",
+      "source_url": "https://arxiv.org/pdf/1607.01759",
+      "sha256": "6cbcf620c2537ed54dfb9ed0d843a83689b82dc41dcd305bfb2e82425d4d7906"
+    },
+    {
+      "id": "test_05",
+      "split": "test",
+      "category": "short",
+      "title": "Self-Attention with Relative Position Representations",
+      "path": "data/test_set/test_05_short.pdf",
+      "source_url": "https://arxiv.org/pdf/1803.02155",
+      "sha256": "8086e2e5e139fd576631ce0ec4560c5ee66225bec260d631a3e8fe7f1f13d50b"
+    },
+    {
+      "id": "test_06",
+      "split": "test",
+      "category": "short",
+      "title": "Universal Sentence Encoder",
+      "path": "data/test_set/test_06_short.pdf",
+      "source_url": "https://arxiv.org/pdf/1803.11175",
+      "sha256": "9aa45b469089b0726f9951bd5c1b878063c059d43fcfa2e82ff4cf05ffa5eaae"
+    },
+    {
+      "id": "test_07",
+      "split": "test",
+      "category": "table_heavy",
+      "title": "BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models",
+      "path": "data/test_set/test_07_table_heavy.pdf",
+      "source_url": "https://arxiv.org/pdf/2104.08663",
+      "sha256": "1925755aeb627123d1a63c66f02e5aa2432f7e92751a02bea7c8c3b6bbb6ec33"
+    },
+    {
+      "id": "test_08",
+      "split": "test",
+      "category": "table_heavy",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "path": "data/test_set/test_08_table_heavy.pdf",
+      "source_url": "https://arxiv.org/pdf/2106.09685",
+      "sha256": "e9a0d3128767db616085dc0f4e6e455e672e89af823e8ed1282793682787395a"
+    },
+    {
+      "id": "test_09",
+      "split": "test",
+      "category": "table_heavy",
+      "title": "FOMC Summary of Economic Projections, December 2023",
+      "path": "data/test_set/test_09_table_heavy.pdf",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/files/fomcprojtabl20231213.pdf",
+      "sha256": "2811d15aface9e9453c4965d8746b1f01778bf994e692b52772cc9610a9137d6"
+    },
+    {
+      "id": "test_10",
+      "split": "test",
+      "category": "poorly_structured",
+      "title": "Berkshire Hathaway 2023 Letter to Shareholders",
+      "path": "data/test_set/test_10_poorly_structured.pdf",
+      "source_url": "https://www.berkshirehathaway.com/letters/2023ltr.pdf",
+      "sha256": "829169be21f4ce05202720fe5645cc1b9a5b1ae20bf5e6ebaff987349766eafd"
+    },
+    {
+      "id": "test_11",
+      "split": "test",
+      "category": "poorly_structured",
+      "title": "Minutes of the Federal Open Market Committee, January 30-31, 2024",
+      "path": "data/test_set/test_11_poorly_structured.pdf",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/files/fomcminutes20240131.pdf",
+      "sha256": "6ce451a5bcf43bf90ac2172f6872cd245e04689c80d4b01e28a01519bb3f0dcc"
+    },
+    {
+      "id": "test_12",
+      "split": "test",
+      "category": "poorly_structured",
+      "title": "Transcript of Chair Powell's Press Conference, January 31, 2024",
+      "path": "data/test_set/test_12_poorly_structured.pdf",
+      "source_url": "https://www.federalreserve.gov/mediacenter/files/FOMCpresconf20240131.pdf",
+      "sha256": "a87b8b75d7f2d64679d91a0f31aa5ff5f117e49a26b1f90d4589293ec40fc91c"
+    }
+  ]
+}

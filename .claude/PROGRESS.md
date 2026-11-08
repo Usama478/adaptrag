@@ -3,16 +3,16 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 2 DONE** (Steps 1-7; gate PASS 10/10, note 0016).
-  **Next: Stage 3** (strategy interface, profiler, router, headings and tables).
-- **Last updated:** 2026-11-01
+- **Current stage:** **Stage 3, Step 1** (evaluation corpus and frozen dev/test split,
+  note 0017). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
+- **Last updated:** 2026-11-08
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
 - **Tests:** Step 7: 163 passed, 7 deselected (normal run). Step 6: 136 passed,
   7 deselected; 7 passed with `-m slow` (5 embedder, 2 real OpenAI). Step 5: 112 passed,
   5 deselected. Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
   Decision notes 0001-0016 (0008 is "Proposed").
-- **Branch:** Step 7 on `stage2-step7-gate` (owner commits after checks).
+- **Branch:** Stage 3 Step 1 on `stage3-step1-corpus-split` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -22,7 +22,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | 0 | Skeleton | Done |
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
 | 2 | Baseline RAG | Done (gate 10/10, note 0016) |
-| 3 | Strategy interface, profiler, router (+ headings, tables) | Not started |
+| 3 | Strategy interface, profiler, router (+ headings, tables) | In progress |
 | 4 | Mini evaluation | Not started |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
 | 6 | Full evaluation | Not started |
@@ -36,6 +36,34 @@ verified by the owner; used for the Stage 2 gate, note 0016).
 `eval/question_format_example.json` shows the format (made-up examples, not real questions). At Stage 4: LLM drafts questions in that
 format, owner verifies each against the PDF and sets `"verified": true`.
  
+## Stage 3 plan (approved, revised 2026-11-08)
+Purpose: let each document get one of several industry-standard splitters automatically,
+with a stated reason. No custom chunkers are written (owner's decision: use well-tested
+libraries); custom methods stay in the stretch stage.
+
+Steps:
+1. Freeze the evaluation corpus and dev/test split (note 0017).
+2. Parser: pymupdf4llm turns the PDF into Markdown (headings as #, tables as Markdown
+   tables), plus a character-offset -> page map so chunks keep page numbers. Bump
+   PARSER_VERSION. Only the parsing module imports PDF libraries.
+3. Strategy interface (abc.ABC: chunk(), retrieve(), name, params for the cache key;
+   dependencies such as the embedder passed at construction) + explicit-dict registry
+   (one new file + one registry line per strategy); fixed-size moved in unchanged;
+   dummy-strategy extensibility test.
+4. Recursive (RecursiveCharacterTextSplitter) and section-aware
+   (MarkdownHeaderTextSplitter, then size-limited) strategies from
+   langchain-text-splitters, same size budget as fixed-size so the benchmark measures
+   boundaries, not size. Retrieval is dense for all strategies until Stage 5.
+5. Simple profiler (pages, words, headings, tables) + router with ordered first-match
+   rules: enough headings -> section-aware, else recursive; fixed-size stays the naive
+   control and is never routed to. Document gets profile, strategy, reason. Upload
+   builds only the routed strategy; other strategies are built on demand (evaluation,
+   compare mode). A "very short" rule is decided in Stage 4 by word count.
+6. GET /documents/{id}, Docker rebuild, end-to-end check, gate, docs.
+
+Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules (note
+0008 stays Proposed, superseded by pymupdf4llm unless the evaluation shows a need).
+
 ## Stage 2 plan (approved)
 1. `TextChunk` + fixed-size chunker, 200/40 words, bge-small chosen [Done, note 0010]
 2. `chunk_sets` + `chunks` tables, chunks saved during ingestion [Done, note 0011]
@@ -97,6 +125,21 @@ format, owner verifies each against the PDF and sets `"verified": true`.
   here; lenient rule (any citation's page range containing an evidence page counts,
   extra citations not penalised; q02 cited three chunks); one run. Stage 4 must build
   questions and evidence more independently and measure citation precision.
+
+## Stage 3 log
+1. **Evaluation corpus and split:** `eval/corpus.json` (8 dev, 12 test, four structure
+   categories, source URLs and SHA-256), `src/adaptrag/evaluation/corpus.py` (pure
+   validation), `scripts/fetch_corpus.py` (downloads missing files, records hashes, prints
+   page and word counts; never prints test document text), `tests/test_corpus.py`.
+   Note 0017.
+   First run: 15 downloaded, 20 recorded, 0 failed; second run: 20 ok. Fix-up: paper_04
+   found to be BERT (same SHA-256 as the new paper_06 download); paper_06 replaced with
+   Batch Normalization; duplicate hashes now rejected; paper_05 source from its arXiv
+   stamp. Re-run after fix-up 1: 1 downloaded, 1 recorded, 19 ok, 0 failed; 189 tests
+   passed. Fix-up 2: BERT relabelled sectioned and renamed paper_04_two_column_c.pdf; MTEB
+   (2210.07316) added as dev table_heavy paper_09; dev 9, test 12 (unchanged). Re-run
+   after fix-up 2: TO FILL from owner's run.
+   Tests: TO FILL from owner's run: test count of the normal `python -m pytest` run.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -244,7 +287,7 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 ## Stage 1 log
 1. **Samples:** `data/samples/` holds paper_01 (single column, "Attention Is All You
    Need"), paper_02 (two column, ResNet), paper_03 (single column, GAN; renamed from
-   `paper_03_two_column_b.pdf` after inspection showed one column), paper_04 (table-heavy),
+   `paper_03_two_column_b.pdf` after inspection showed one column), paper_04 (table-heavy) (later identified as BERT, arXiv 1810.04805, relabelled sectioned and renamed paper_04_two_column_c.pdf; Stage 3 Step 1),
    paper_05 (short, IEEE style); `bad/` holds corrupt, fake, scanned. `data/` is gitignored.
 2. **Upload validation:** `routes/documents.py`. 415 wrong extension or not `%PDF-`,
    413 over `ADAPTRAG_MAX_UPLOAD_MB` (20). Note 0002.
@@ -334,6 +377,8 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 - The local app and the Docker app share one database but not one upload folder
   (data/uploads vs the app-data volume), so a document may exist without its file locally.
   `scripts/list_documents.py` shows which; `scripts/reingest.py ID --file PATH` restores it.
+- A sample file name hid a duplicate (paper_04 was BERT); the SHA-256 in the manifest
+  revealed it. Compare hashes, not names.
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -441,14 +486,16 @@ format, owner verifies each against the PDF and sets `"verified": true`.
 11. Why is /answer separate from /query?
 12. Why does the gate score cited_ok but only report retrieved_ok?
 13. How were the gate questions built, and why might they be biased toward this system?
+## Explain-aloud questions (Stage 3, answer without notes)
+1. Why record a SHA-256 for each document instead of trusting the URL or file name?
+2. What are the dev set and the test set for, and why freeze the split before writing
+   router rules?
 
 ## Open items / notes for the next chat
-- Stage 2 is done. Owner: commit Step 7 on `stage2-step7-gate`, review, merge.
-- Next: Stage 3 (strategy interface, profiler, router, headings and tables). Start with
-  a Stage 3 plan for approval; decide the dev/test document split before router rules.
-  Parser fixes for glued words and page furniture belong here (failure-analysis notes).
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
 - Documents ingested before Step 2/4 lack chunks or embeddings; use `scripts/reingest.py`.
+- Stage 4 decision: owner wants no manual work; hand-verified questions become
+  machine-verified with spot checks unless the owner decides otherwise.
 - Update this file at the end of the chat.
