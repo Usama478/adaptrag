@@ -6,8 +6,11 @@ the full list of strategies can be read in one place.
 
 from adaptrag.embedding.base import Embedder
 from adaptrag.strategies.base import Strategy
+from adaptrag.strategies.fixed_size import FixedSizeStrategy
 
-STRATEGIES: dict[str, type[Strategy]] = {}
+STRATEGIES: dict[str, type[Strategy]] = {
+    "fixed_size": FixedSizeStrategy,
+}
 
 
 class UnknownStrategyError(LookupError):
