@@ -3,8 +3,9 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3, Step 1** (evaluation corpus and frozen dev/test split,
-  note 0017). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
+- **Current stage:** **Stage 3, Step 2** (universal parser with pymupdf4llm, note 0018).
+  Step 1 done (evaluation corpus and frozen dev/test split, note 0017). Stage 2 done
+  (Steps 1-7; gate PASS 10/10, note 0016).
 - **Last updated:** 2026-11-08
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
@@ -12,7 +13,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
   7 deselected; 7 passed with `-m slow` (5 embedder, 2 real OpenAI). Step 5: 112 passed,
   5 deselected. Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
   Decision notes 0001-0016 (0008 is "Proposed").
-- **Branch:** Stage 3 Step 1 on `stage3-step1-corpus-split` (owner commits after checks).
+- **Branch:** Stage 3 Step 2 on `stage3-step2-markdown-parser` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -44,21 +45,23 @@ libraries); custom methods stay in the stretch stage.
 Steps:
 1. Freeze the evaluation corpus and dev/test split (note 0017).
 2. Parser: pymupdf4llm turns the PDF into Markdown (headings as #, tables as Markdown
-   tables), plus a character-offset -> page map so chunks keep page numbers. Bump
-   PARSER_VERSION. Only the parsing module imports PDF libraries.
+   tables) (page map moved to Step 4). Bump PARSER_VERSION. Only the parsing module
+   imports PDF libraries.
 3. Strategy interface (abc.ABC: chunk(), retrieve(), name, params for the cache key;
    dependencies such as the embedder passed at construction) + explicit-dict registry
    (one new file + one registry line per strategy); fixed-size moved in unchanged;
    dummy-strategy extensibility test.
 4. Recursive (RecursiveCharacterTextSplitter) and section-aware
    (MarkdownHeaderTextSplitter, then size-limited) strategies from
-   langchain-text-splitters, same size budget as fixed-size so the benchmark measures
-   boundaries, not size. Retrieval is dense for all strategies until Stage 5.
+   langchain-text-splitters, plus the character-offset -> page map, same size budget as
+   fixed-size so the benchmark measures boundaries, not size. Retrieval is dense for all
+   strategies until Stage 5.
 5. Simple profiler (pages, words, headings, tables) + router with ordered first-match
    rules: enough headings -> section-aware, else recursive; fixed-size stays the naive
    control and is never routed to. Document gets profile, strategy, reason. Upload
    builds only the routed strategy; other strategies are built on demand (evaluation,
-   compare mode). A "very short" rule is decided in Stage 4 by word count.
+   compare mode). A "very short" rule is decided in Stage 4 by word count. fallback_pages
+   count as a text-quality signal.
 6. GET /documents/{id}, Docker rebuild, end-to-end check, gate, docs.
 
 Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules (note
@@ -138,8 +141,23 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    stamp. Re-run after fix-up 1: 1 downloaded, 1 recorded, 19 ok, 0 failed; 189 tests
    passed. Fix-up 2: BERT relabelled sectioned and renamed paper_04_two_column_c.pdf; MTEB
    (2210.07316) added as dev table_heavy paper_09; dev 9, test 12 (unchanged). Re-run
-   after fix-up 2: TO FILL from owner's run.
-   Tests: TO FILL from owner's run: test count of the normal `python -m pytest` run.
+   after fix-up 2: 1 downloaded, 1 recorded, 20 ok, 0 failed.
+   Tests: 189 passed, 7 deselected.
+2. **Markdown parser:** `parsing/pdf.py` builds blocks from pymupdf4llm's per-page
+   Markdown through the pure `blocks_from_markdown()`: HEADING (level 1-6), PARAGRAPH and
+   TABLE (Markdown kept), each with page and heading path. `ParsedBlock.level` added.
+   Same error types and scanned rule (checked before Markdown); OCR off;
+   `PARSER_VERSION` 0.2.0. `scripts/parser_report.py` compares the old and new parser on
+   dev folders. Note 0018; note 0008 superseded.
+   Decisions: page headers and footers dropped (header=False, footer=False; whitespace
+   word counts on the 9 dev documents: digit-only blocks 60 -> 0, words 63,507 -> 63,431,
+   identical headings and tables); table rows normalised to spaced cells; per-page
+   plain-text fallback (fewer than 70% of plain words by `count_words`, at least 50 plain
+   words; `ParsedDocument.fallback_pages`).
+   Report (count_words; old plain parser -> new): words 65,308 -> 63,518; headings
+   0 -> 185; tables 0 -> 49; hyphen breaks 927 -> 15; digit-only blocks 133 -> 22 (all on
+   MTEB fallback pages); fallback pages: paper_09 [4, 20, 22], others none.
+   Tests: 255 passed, 7 deselected.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -379,6 +397,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   `scripts/list_documents.py` shows which; `scripts/reingest.py ID --file PATH` restores it.
 - A sample file name hid a duplicate (paper_04 was BERT); the SHA-256 in the manifest
   revealed it. Compare hashes, not names.
+- How you count decides what you see: glued table rows made MTEB look 80-96% lost;
+  counting real words showed only 3 pages lost text.
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -443,6 +463,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - `FakeEmbedder` scores are meaningless: query tests check shape and order only; ranking
   quality is measured with the real model in Stage 4.
 - Documents ingested before Step 4 have no embeddings until `scripts/reingest.py` runs.
+- Existing documents were parsed with 0.1.0; queries answer 409 (needs re-ingestion) until
+  scripts/reingest.py runs (Stage 3 Step 6).
 - Stage 3 Strategy interface: a strategy must receive its dependencies (an embedder, an
   LLM client) when it is created, and expose its params for the cache key.
 - Stage 3: LLM-guided chunkers may only return boundary positions, never rewritten text.
@@ -490,6 +512,9 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 1. Why record a SHA-256 for each document instead of trusting the URL or file name?
 2. What are the dev set and the test set for, and why freeze the split before writing
    router rules?
+3. Why is blocks_from_markdown a pure function, and why test it with strings instead of
+   PDFs?
+4. Why a per-page plain-text fallback, and why did the word-counting method matter?
 
 ## Open items / notes for the next chat
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9

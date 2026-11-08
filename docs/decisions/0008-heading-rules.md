@@ -1,7 +1,7 @@
 # 0008: Heading detection rules v1
 
 Date: 2026-10-30
-Status: Accepted
+Status: Superseded by 0018
 
 ## Context
 The section-aware chunker and the router's main rule ("headings found")

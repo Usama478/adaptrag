@@ -28,6 +28,28 @@ def test_heading_path_defaults_to_empty() -> None:
     assert make_block().heading_path == ()
 
 
+def test_level_defaults_to_none() -> None:
+    assert make_block().level is None
+
+
+@pytest.mark.parametrize("level", [1, 6])
+def test_heading_keeps_a_level_from_one_to_six(level: int) -> None:
+    block = ParsedBlock(text="Intro", page=1, block_type=BlockType.HEADING, level=level)
+    assert block.level == level
+
+
+@pytest.mark.parametrize("bad_level", [None, 0, 7])
+def test_heading_needs_a_level_from_one_to_six(bad_level: int | None) -> None:
+    with pytest.raises(ValueError, match="a heading needs a level"):
+        ParsedBlock(text="Intro", page=1, block_type=BlockType.HEADING, level=bad_level)
+
+
+@pytest.mark.parametrize("block_type", [BlockType.PARAGRAPH, BlockType.TABLE])
+def test_only_headings_have_a_level(block_type: BlockType) -> None:
+    with pytest.raises(ValueError, match="only headings have a level"):
+        ParsedBlock(text="Body", page=1, block_type=block_type, level=1)
+
+
 def test_block_is_immutable() -> None:
     block = make_block()
     with pytest.raises(FrozenInstanceError):
@@ -65,6 +87,28 @@ def test_valid_document_keeps_blocks_in_order() -> None:
 def test_document_rejects_block_beyond_page_count() -> None:
     with pytest.raises(ValueError, match="page 5"):
         ParsedDocument(page_count=4, parser_version="0.1.0", blocks=(make_block(page=5),))
+
+
+def test_fallback_pages_default_to_empty() -> None:
+    doc = ParsedDocument(page_count=1, parser_version="0.2.0", blocks=())
+    assert doc.fallback_pages == ()
+
+
+def test_valid_fallback_pages_are_kept() -> None:
+    doc = ParsedDocument(page_count=3, parser_version="0.2.0", blocks=(), fallback_pages=(1, 3))
+    assert doc.fallback_pages == (1, 3)
+
+
+@pytest.mark.parametrize("bad_pages", [(2, 2), (3, 2)], ids=["duplicate", "decreasing"])
+def test_fallback_pages_must_be_strictly_increasing(bad_pages: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="strictly increasing"):
+        ParsedDocument(page_count=3, parser_version="0.2.0", blocks=(), fallback_pages=bad_pages)
+
+
+@pytest.mark.parametrize("bad_page", [0, 4])
+def test_fallback_pages_must_be_inside_the_document(bad_page: int) -> None:
+    with pytest.raises(ValueError, match="outside 1-3"):
+        ParsedDocument(page_count=3, parser_version="0.2.0", blocks=(), fallback_pages=(bad_page,))
 
 
 def test_document_needs_at_least_one_page() -> None:

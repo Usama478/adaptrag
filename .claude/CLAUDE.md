@@ -33,7 +33,7 @@ Decide per component by the cost of changing it later.
     `ingest.run_ingest_job(engine, upload_dir, job_id, embedder)`.
   - File storage: local disk now (`data/uploads/`); S3-style object storage later.
     All file paths go through `storage.py` (`upload_path()`, `save_upload()`).
-  - PDF library: only `parsing/pdf.py` imports PyMuPDF; everything else reads
+  - PDF library: only `parsing/pdf.py` imports `pymupdf` or `pymupdf4llm`; everything else reads
     `ParsedBlock` / `ParsedDocument`.
   - Vector store: pgvector in the same Postgres (table `chunk_embeddings`, exact search,
     no ANN index). Only `vectorstore/pgvector.py` reads and writes vectors; an HNSW index
@@ -47,7 +47,9 @@ Decide per component by the cost of changing it later.
 - PostgreSQL 17 with pgvector (Docker image `pgvector/pgvector:pg17`, also in CI),
   SQLAlchemy 2.0 (sync, typed `Mapped` style), psycopg 3 (`psycopg[binary]`),
   Alembic (migrations), `pgvector` (SQLAlchemy `Vector` column type; note 0013)
-- PyMuPDF (`pymupdf>=1.24`, currently 2.0) for PDF parsing (AGPL; fine for this public repo)
+- PyMuPDF (`pymupdf>=2.0`, currently 2.0) and pymupdf4llm (`pymupdf4llm>=2.0`, currently 2.0;
+  PDF to per-page Markdown with headings and tables, note 0018) for PDF parsing (AGPL; fine
+  for this public repo)
 - Tests: pytest (TestClient), against a real Postgres test database
 - Lint/format: ruff. Types: mypy (strict, `files = src`)
 - Container: Docker + docker compose. CI: GitHub Actions with a Postgres service
@@ -57,8 +59,7 @@ Decide per component by the cost of changing it later.
   install on the Mac (note 0012)
 - LLM: OpenAI gpt-4o-mini through the official `openai` client (`openai>=1.66`,
   Responses API), chosen by the owner for the lowest cost (note 0015)
-- Planned: pymupdf4llm (PDF to Markdown with headings and tables, Stage 3 Step 2),
-  langchain-text-splitters (RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter;
+- Planned: langchain-text-splitters (RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter;
   Stage 3 Step 4), BM25 and a cross-encoder reranker (Stage 5)
 ## Repo layout
 ```
@@ -79,11 +80,12 @@ adaptrag/
 ├── docs/decisions/               # 0001 stack, 0002 upload validation, 0003 hashing/storage,
 │                                 # 0004 Postgres/SQLAlchemy/Alembic, 0005 parsed block shape,
 │                                 # 0006 PDF library, 0007 reading order,
-│                                 # 0008 heading rules (Proposed), 0009 background jobs,
+│                                 # 0008 heading rules (superseded), 0009 background jobs,
 │                                 # 0010 fixed-size chunking, 0011 chunk storage,
 │                                 # 0012 embedder, 0013 vector storage (pgvector),
 │                                 # 0014 dense retrieval, 0015 answer generation,
-│                                 # 0016 Stage 2 gate, 0017 evaluation corpus split
+│                                 # 0016 Stage 2 gate, 0017 evaluation corpus split,
+│                                 # 0018 Markdown parser (pymupdf4llm)
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -98,6 +100,7 @@ adaptrag/
 │   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
+│   ├── parser_report.py          # old vs Markdown parser per PDF (dev folders only)
 │   ├── query.py                  # top-k chunks for a question (real embedder), like the API
 │   ├── reingest.py               # new job for an existing document, real embedder;
 │   │                             # --file PATH restores a missing upload (SHA-256 checked)
@@ -140,7 +143,8 @@ adaptrag/
 │   │   └── fake.py               # FakeEmbedder (hash-based, any dimension) for tests
 │   ├── parsing/
 │   │   ├── blocks.py             # BlockType, ParsedBlock, ParsedDocument
-│   │   └── pdf.py                # parse_pdf(), clean_text(), ParseError family, PARSER_VERSION
+│   │   └── pdf.py                # parse_pdf(), blocks_from_markdown(), clean_text(),
+│   │                             # ParseError family, PARSER_VERSION
 │   ├── main.py                   # create_app() factory; includes routers
 │   └── routes/
 │       ├── health.py             # GET /health (liveness)
@@ -194,6 +198,7 @@ python scripts/gate_check.py eval/questions/paper_01.json --document-id ID --k 5
                                                    # Stage 2 gate: scores verified questions
                                                    # (one real LLM call each; costs money)
 python scripts/fetch_corpus.py                     # download missing corpus PDFs, record SHA-256
+python scripts/parser_report.py data/samples       # old vs Markdown parser (dev folders only)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
 python -m pytest -m slow                           # slow tests only (real model, real LLM
@@ -248,7 +253,13 @@ once resolved to the wrong Python.
   - After adding a migration, rebuild Docker with `docker compose up --build -d`
     (the migrate service runs the migrations baked into the image).
 - **Parsing:**
-  - Only `parsing/pdf.py` imports PyMuPDF. PyMuPDF's types are incomplete, so the
+  - Only `parsing/pdf.py` imports `pymupdf` or `pymupdf4llm`. Blocks come from pymupdf4llm
+    Markdown via the pure `blocks_from_markdown()`. HEADING blocks have level 1-6; other
+    blocks have level None.
+  - `to_markdown` runs with header=False, footer=False, write_images=False, use_ocr=False;
+    table rows are normalised to spaced cells; pages that lose too much text (count_words)
+    fall back to plain text (ParsedDocument.fallback_pages, note 0018).
+  - PyMuPDF's types are incomplete, so the
     document is typed `Any` there, with `# type: ignore[no-untyped-call]` on `open()`.
   - `ParsedBlock.page` is the 1-based physical page (PyMuPDF index + 1).
   - Unusable PDFs raise a `ParseError` subclass; its message is shown to users.
@@ -396,8 +407,8 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 in progress, Step 1 (evaluation corpus and frozen dev/test split, note
-0017). Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
+**Status: Stage 3 in progress, Step 2 (Markdown parser with pymupdf4llm, note 0018).
+Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**
 See `.claude/PROGRESS.md`.
