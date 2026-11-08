@@ -34,8 +34,7 @@ def current_chunk_set_id(
 ) -> int | None:
     """The id of the chunk set ingestion would create now with these settings, or None.
 
-    Takes a name and params, not a Strategy: strategies import this module, and the
-    scripts make this check before the embedding model (which a Strategy needs) loads.
+    Takes a name and params, not a Strategy, because strategies import this module.
     """
     return session.scalar(
         select(ChunkSet.id).where(

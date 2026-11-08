@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 from sqlalchemy.engine import make_url
 
+from adaptrag import ingest
 from adaptrag.config import Settings, get_settings
 from adaptrag.db import get_engine
 from adaptrag.embedding.base import Embedder
@@ -18,6 +19,8 @@ from adaptrag.llm.fake import FakeLLM
 from adaptrag.llm.provider import get_app_llm
 from adaptrag.main import create_app
 from adaptrag.models import EMBEDDING_DIMENSION, Base
+from adaptrag.routing.profile import DocumentProfile
+from adaptrag.routing.router import RouteDecision
 
 TEST_DB_NAME = "adaptrag_test"
 
@@ -46,6 +49,19 @@ def db_engine(migrated_engine: Engine) -> Iterator[Engine]:
     table_names = ", ".join(table.name for table in Base.metadata.sorted_tables)
     with migrated_engine.begin() as connection:
         connection.execute(text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE"))
+
+
+@pytest.fixture
+def route_to_fixed_size(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make ingest choose fixed_size, for tests that assert exact fixed-size output.
+
+    Those tests check storage and retrieval, not routing.
+    """
+
+    def always_fixed_size(profile: DocumentProfile) -> RouteDecision:
+        return RouteDecision("fixed_size", "test_rule", "test reason")
+
+    monkeypatch.setattr(ingest, "route", always_fixed_size)
 
 
 @pytest.fixture

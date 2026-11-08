@@ -15,7 +15,7 @@ from sqlalchemy import Engine, delete, select
 from sqlalchemy.orm import Session
 
 from adaptrag.embedding.fake import FakeEmbedder
-from adaptrag.models import EMBEDDING_DIMENSION, Chunk, ChunkSet
+from adaptrag.models import EMBEDDING_DIMENSION, Chunk, ChunkSet, Document
 
 ClientFactory = Callable[..., TestClient]
 
@@ -46,6 +46,7 @@ def ask(client: TestClient, document_id: int, **body: Any) -> httpx.Response:
     return client.post(f"/documents/{document_id}/query", json=body)
 
 
+@pytest.mark.usefixtures("route_to_fixed_size")
 def test_ready_document_returns_top_k_best_first(make_client: ClientFactory) -> None:
     client = make_client()
     # 12 pages x 50 words = 600 words -> 4 chunks.
@@ -67,6 +68,7 @@ def test_ready_document_returns_top_k_best_first(make_client: ClientFactory) -> 
         assert result["text"]
 
 
+@pytest.mark.usefixtures("route_to_fixed_size")
 def test_default_k_is_five_and_never_exceeds_chunk_count(make_client: ClientFactory) -> None:
     client = make_client()
     document_id = upload(client, make_pdf_bytes(pages=12))  # 4 chunks
@@ -120,6 +122,22 @@ def test_ready_document_without_chunk_set_returns_409(
     document_id = upload(client, make_pdf_bytes(pages=2))
     with Session(db_engine) as session:
         session.execute(delete(ChunkSet).where(ChunkSet.document_id == document_id))
+        session.commit()
+
+    response = ask(client, document_id, question=QUESTION)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Document needs re-ingestion for the current settings"
+
+
+def test_ready_document_without_a_route_returns_409(
+    make_client: ClientFactory, db_engine: Engine
+) -> None:
+    client = make_client()
+    document_id = upload(client, make_pdf_bytes(pages=2))
+    # Its chunk set and vectors stay in place, so only the missing strategy can cause the 409.
+    with Session(db_engine) as session:
+        session.get_one(Document, document_id).strategy = None
         session.commit()
 
     response = ask(client, document_id, question=QUESTION)

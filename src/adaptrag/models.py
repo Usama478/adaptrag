@@ -34,6 +34,11 @@ class Document(Base):
     size_bytes: Mapped[int]
     status: Mapped[str] = mapped_column(String(20), default="uploaded")
     page_count: Mapped[int | None]
+    # The router's decision. All four stay None on rows ingested before routing existed.
+    profile: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    strategy: Mapped[str | None] = mapped_column(String(50))
+    route_rule: Mapped[str | None] = mapped_column(String(50))
+    route_reason: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

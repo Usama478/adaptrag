@@ -18,7 +18,8 @@ from adaptrag.chunking.chunks import TextChunk
 from adaptrag.models import Chunk, ChunkSet
 from adaptrag.parsing.blocks import ParsedDocument
 from adaptrag.parsing.pdf import parse_pdf
-from adaptrag.routes import answer, query
+from adaptrag.routing.profile import DocumentProfile
+from adaptrag.routing.router import RouteDecision
 from adaptrag.storage import upload_path
 from adaptrag.strategies.base import Strategy
 from adaptrag.strategies.registry import STRATEGIES
@@ -43,12 +44,14 @@ class DummyStrategy(Strategy):
 
 
 @pytest.fixture(autouse=True)
-def dummy_is_the_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def router_chooses_the_dummy(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(STRATEGIES, DummyStrategy.name, DummyStrategy)
-    # These modules imported DEFAULT_STRATEGY by name, so each one holds its own reference;
-    # patching registry.DEFAULT_STRATEGY alone would not reach them.
-    for module in (ingest, query, answer):
-        monkeypatch.setattr(module, "DEFAULT_STRATEGY", DummyStrategy.name)
+
+    def route_to_dummy(profile: DocumentProfile) -> RouteDecision:
+        return RouteDecision(DummyStrategy.name, "test_rule", "test reason")
+
+    # ingest imported route by name, so the patch must be applied to ingest's reference.
+    monkeypatch.setattr(ingest, "route", route_to_dummy)
 
 
 def make_pdf_bytes(pages: int = 2) -> bytes:

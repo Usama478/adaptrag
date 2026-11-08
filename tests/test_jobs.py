@@ -23,7 +23,10 @@ from adaptrag.models import (
     Document,
     Job,
 )
-from adaptrag.parsing.pdf import PARSER_VERSION
+from adaptrag.parsing.pdf import PARSER_VERSION, parse_pdf
+from adaptrag.routing.profile import profile_document
+from adaptrag.routing.router import route
+from adaptrag.storage import upload_path
 
 ClientFactory = Callable[..., TestClient]
 
@@ -93,6 +96,7 @@ def test_unknown_job_returns_404(make_client: ClientFactory) -> None:
     assert response.status_code == 404
 
 
+@pytest.mark.usefixtures("route_to_fixed_size")
 def test_successful_job_saves_fixed_size_chunks(
     make_client: ClientFactory, db_engine: Engine
 ) -> None:
@@ -217,6 +221,7 @@ def over_limit_warnings(caplog: pytest.LogCaptureFixture) -> list[str]:
     ]
 
 
+@pytest.mark.usefixtures("route_to_fixed_size")
 def test_chunks_over_token_limit_are_warned_about(
     make_client: ClientFactory, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -237,3 +242,27 @@ def test_no_warning_when_chunks_fit(
     caplog.set_level(logging.WARNING, logger="adaptrag.ingest")
     upload(make_client(), make_pdf_bytes(pages=2))  # 102 fake tokens, limit 512
     assert over_limit_warnings(caplog) == []
+
+
+# --- Routing during ingestion (Stage 3 Step 5c) ---
+
+
+def test_upload_stores_the_route_decision_and_uses_it(
+    make_client: ClientFactory, db_engine: Engine, tmp_path: Path
+) -> None:
+    body = upload(make_client(), make_pdf_bytes(pages=2)).json()
+
+    # make_client saves uploads under tmp_path / "uploads".
+    profile = profile_document(parse_pdf(upload_path(body["file_hash"], tmp_path / "uploads")))
+    decision = route(profile)
+    document = get_document(db_engine, body["document_id"])
+
+    assert document.profile == profile.to_dict()
+    assert document.strategy == decision.strategy
+    assert document.route_rule == decision.rule
+    assert document.route_reason == decision.reason
+    with Session(db_engine) as session:
+        chunk_set = session.scalars(
+            select(ChunkSet).where(ChunkSet.document_id == body["document_id"])
+        ).one()
+    assert chunk_set.strategy == document.strategy

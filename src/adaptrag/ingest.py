@@ -1,4 +1,4 @@
-"""Ingestion job: parse an uploaded PDF, chunk it, store the chunks, embed them.
+"""Ingestion job: parse an uploaded PDF, route it, chunk it, store the chunks, embed them.
 
 `run_ingest_job` is a plain function on purpose (the seam in CLAUDE.md):
 FastAPI BackgroundTasks calls it today; a Redis-backed queue can call the
@@ -17,8 +17,10 @@ from adaptrag.chunking.chunks import TextChunk
 from adaptrag.embedding.base import Embedder
 from adaptrag.models import Chunk, ChunkSet, Document, Job
 from adaptrag.parsing.pdf import ParseError, parse_pdf
+from adaptrag.routing.profile import profile_document
+from adaptrag.routing.router import route
 from adaptrag.storage import upload_path
-from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
+from adaptrag.strategies.registry import build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist, save_embeddings
 
 logger = logging.getLogger(__name__)
@@ -123,9 +125,10 @@ def embed_chunk_set(
 
 
 def run_ingest_job(engine: Engine, upload_dir: Path, job_id: int, embedder: Embedder) -> None:
-    """Parse, chunk and embed the job's document, then mark the job succeeded or failed.
+    """Parse, route, chunk and embed the job's document, then mark the job succeeded or failed.
 
-    Chunks and vectors are saved in one transaction: a failure anywhere leaves neither.
+    Chunks, vectors and the route decision are saved in one transaction: a failure
+    anywhere leaves none of them.
     """
     with Session(engine) as session:
         job = session.get(Job, job_id)
@@ -139,7 +142,9 @@ def run_ingest_job(engine: Engine, upload_dir: Path, job_id: int, embedder: Embe
 
         try:
             parsed = parse_pdf(upload_path(document.file_hash, upload_dir))
-            strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+            profile = profile_document(parsed)
+            decision = route(profile)
+            strategy = build_strategy(decision.strategy, embedder)
             chunks = strategy.chunk(parsed)
             chunk_set_id, created = save_chunk_set(
                 session,
@@ -161,5 +166,9 @@ def run_ingest_job(engine: Engine, upload_dir: Path, job_id: int, embedder: Embe
             finish(job, document, succeeded=False, error=INTERNAL_ERROR)
         else:
             document.page_count = parsed.page_count
+            document.profile = profile.to_dict()
+            document.strategy = decision.strategy
+            document.route_rule = decision.rule
+            document.route_reason = decision.reason
             finish(job, document, succeeded=True, error=None)
         session.commit()

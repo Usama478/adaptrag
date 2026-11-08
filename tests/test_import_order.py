@@ -11,6 +11,7 @@ import pytest
     [
         "adaptrag.ingest",
         "adaptrag.retrieval.dense",
+        "adaptrag.routing.router",
         "adaptrag.strategies.registry",
         "adaptrag.routes.query",
         "adaptrag.main",

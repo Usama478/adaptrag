@@ -16,11 +16,11 @@ from adaptrag.embedding.fake import FakeEmbedder
 from adaptrag.ingest import save_chunk_set
 from adaptrag.llm.fake import FakeLLM
 from adaptrag.models import EMBEDDING_DIMENSION, Chunk, Document
-from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
+from adaptrag.strategies.registry import build_strategy
 from adaptrag.vectorstore.pgvector import save_embeddings
 
 EMBEDDER = FakeEmbedder(dimension=EMBEDDING_DIMENSION)
-STRATEGY = build_strategy(DEFAULT_STRATEGY, EMBEDDER)
+STRATEGY = build_strategy("fixed_size", EMBEDDER)
 TEXTS = ["alpha chunk", "beta chunk", "gamma chunk"]
 QUESTION = "Which chunk?"
 PASS_ALL = -1.0

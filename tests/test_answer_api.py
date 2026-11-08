@@ -40,6 +40,7 @@ def ask(client: TestClient, document_id: int, **body: Any) -> httpx.Response:
     return client.post(f"/documents/{document_id}/answer", json=body)
 
 
+@pytest.mark.usefixtures("route_to_fixed_size")
 def test_answer_returns_found_with_citations_and_sources(make_client: ClientFactory) -> None:
     llm = FakeLLM(reply="It proposes p-words [1].")
     client = make_client(llm=llm, retrieval_min_score=PASS_ALL)

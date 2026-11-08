@@ -1,8 +1,8 @@
 """Ask one document a question and print the most similar chunks (dense retrieval, no LLM).
 
 Same checks and messages as POST /documents/{id}/query, printed as plain text.
-Uses the real embedder from settings (ADAPTRAG_* or .env); the model loads only after
-the document passes the checks.
+Uses the real embedder from settings (ADAPTRAG_* or .env); the model loads only for a
+ready document that has a stored strategy.
 
 Usage: python scripts/query.py DOCUMENT_ID "QUESTION" [--k 5]
 """
@@ -23,8 +23,7 @@ from adaptrag.retrieval.dense import (
     current_chunk_set_id,
     not_ready_message,
 )
-from adaptrag.strategies.fixed_size import PARAMS
-from adaptrag.strategies.registry import DEFAULT_STRATEGY, build_strategy
+from adaptrag.strategies.registry import build_strategy
 from adaptrag.vectorstore.pgvector import embeddings_exist
 
 PREVIEW_CHARS = 150
@@ -46,8 +45,7 @@ def main() -> None:
 
     settings = get_settings()
     engine = get_engine(settings.database_url)
-    # The real embedder's model_name is the model setting, so the checks below need no
-    # model; it is loaded only when the document can be searched.
+    # The real embedder's model_name is the model setting.
     model_name = settings.embedding_model
 
     with Session(engine) as session:
@@ -56,9 +54,7 @@ def main() -> None:
             raise SystemExit("Document not found.")
         if document.status != "ready":
             raise SystemExit(not_ready_message(document.status))
-        # PARAMS directly: building a strategy needs the model, which loads after these checks.
-        chunk_set_id = current_chunk_set_id(session, document.id, DEFAULT_STRATEGY, PARAMS)
-        if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, model_name):
+        if document.strategy is None:
             raise SystemExit(NEEDS_REINGESTION)
 
         embedder = get_embedder(
@@ -66,7 +62,11 @@ def main() -> None:
             settings.embedding_device,
             settings.embedding_query_instruction,
         )
-        strategy = build_strategy(DEFAULT_STRATEGY, embedder)
+        strategy = build_strategy(document.strategy, embedder)
+        chunk_set_id = current_chunk_set_id(session, document.id, strategy.name, strategy.params)
+        if chunk_set_id is None or not embeddings_exist(session, chunk_set_id, model_name):
+            raise SystemExit(NEEDS_REINGESTION)
+
         results = strategy.retrieve(session, chunk_set_id, question, args.k)
 
     print(f"document {document.id} ({document.filename}), chunk set {chunk_set_id}, {model_name}")
