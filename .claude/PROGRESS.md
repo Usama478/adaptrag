@@ -3,18 +3,19 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3, Step 3** (strategy interface and registry, note 0019).
+- **Current stage:** **Stage 3, Step 4** (recursive and section-aware strategies, note 0020).
+  Step 3 done (strategy interface and registry, note 0019).
   Step 2 done (universal parser with pymupdf4llm, note 0018). Step 1 done (evaluation
   corpus and frozen dev/test split, note 0017). Stage 2 done
   (Steps 1-7; gate PASS 10/10, note 0016).
-- **Last updated:** 2026-11-08
+- **Last updated:** 2026-11-09
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
 - **Tests:** Step 7: 163 passed, 7 deselected (normal run). Step 6: 136 passed,
   7 deselected; 7 passed with `-m slow` (5 embedder, 2 real OpenAI). Step 5: 112 passed,
   5 deselected. Step 4: 92 passed, 5 deselected; 5 passed with `-m slow`.
   Decision notes 0001-0016 (0008 is "Proposed").
-- **Branch:** Stage 3 Step 2 on `stage3-step2-markdown-parser` (owner commits after checks).
+- **Branch:** Stage 3 Step 4 on `stage3-step4-splitters` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
@@ -52,11 +53,12 @@ Steps:
    dependencies such as the embedder passed at construction) + explicit-dict registry
    (one new file + one registry line per strategy); fixed-size moved in unchanged;
    dummy-strategy extensibility test.
-4. Recursive (RecursiveCharacterTextSplitter) and section-aware
-   (MarkdownHeaderTextSplitter, then size-limited) strategies from
-   langchain-text-splitters, plus the character-offset -> page map, same size budget as
-   fixed-size so the benchmark measures boundaries, not size. Retrieval is dense for all
-   strategies until Stage 5.
+4. Recursive (RecursiveCharacterTextSplitter from langchain-text-splitters) and
+   section-aware strategies, plus the character-offset -> page map, same size budget as
+   fixed-size so the benchmark measures boundaries, not size. Section-aware groups blocks
+   by the parser's heading_path (not MarkdownHeaderTextSplitter, which gives no offsets)
+   and adds the heading-path prefix to each chunk. Retrieval is dense for all strategies
+   until Stage 5.
 5. Simple profiler (pages, words, headings, tables) + router with ordered first-match
    rules: enough headings -> section-aware, else recursive; fixed-size stays the naive
    control and is never routed to. Document gets profile, strategy, reason. Upload
@@ -164,6 +166,16 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    `/answer` and scripts go through the registry; import loop removed (270 tests).
    3d: extensibility tests and note 0019.
    Tests: 272 passed, 7 deselected.
+4. **Recursive and section-aware strategies:** 4a: page map, `chunking/text_map.py` (289
+   tests). 4b: splitter wrapper, `chunking/splitter.py` (307 tests). 4c: recursive strategy
+   (317 tests). 4d: section-aware strategy and shared helpers, `chunking/segments.py` (334
+   tests). 4e: `scripts/chunk_report.py` and note 0020.
+   Tests: 334 passed, 7 deselected.
+   Chunk report (TOTAL lines, 9 dev documents):
+   `fixed_size chunks=482 mean_words=198.2 max_words=200 over_200=0 multi_page=112 table_chunks=42 glued=0`;
+   `recursive chunks=531 mean_words=153.0 max_words=200 over_200=0 multi_page=71 table_chunks=125 glued=0`;
+   `section_aware chunks=614 mean_words=141.7 max_words=200 over_200=0 multi_page=54 table_chunks=126 glued=0`.
+   Strategies clearly differ; no chunk over 200 words; glued words 0.
 
 ## Stage 2 log
 1. **Fixed-size chunker:** `chunking/chunks.py` (`TextChunk`: index, text, page_start,
@@ -486,6 +498,13 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 - Prompt-injection defence reduces but does not eliminate the risk.
 - The app does not configure logging yet, so INFO lines (token usage) may not show under
   uvicorn; `scripts/answer.py` configures it. Stage 9 hardening.
+- Splitter offsets: identical repeated text can map a piece to an earlier copy; the page is
+  wrong only if the copies are on different pages (note 0020).
+- `>` and `|` count as words, so a prefix or a table holds fewer real words than its count
+  (note 0020).
+- False headings create false sections in the section-aware strategy (note 0020).
+- Section-aware differs from recursive in boundaries AND context (the prefix), so Stage 4
+  cannot separate the two; a Stage 5 switch could (note 0020).
 ## Future stretch ("Stage 10", after Stage 6, tuned on dev documents only)
 - Semantic chunking (owner's own binary-search boundary method).
 - LLM-guided chunking.
@@ -525,6 +544,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 4. Why a per-page plain-text fallback, and why did the word-counting method matter?
 5. Why an abc.ABC for strategies instead of a Protocol, and why must dense.py not import
    ingest.py?
+6. Why do we compute splitter offsets ourselves, and why does section-aware group by
+   heading_path instead of using MarkdownHeaderTextSplitter?
 
 ## Open items / notes for the next chat
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9

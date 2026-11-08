@@ -84,7 +84,8 @@ heading rules, but they missed IEEE-style headings and would be more code to own
   is never rescued (pages under 50 words), e.g. a one-line cover page.
 - False headings: "end for" twice in GAN pseudo-code, "greatly benefited from very deep
   models." in ResNet.
-- The Stage 2 glued words were found in neither parser's output, so their origin must be
-  rechecked on chunks in Step 4.
+- The Stage 2 glued words appear in neither parser's output nor in any strategy's chunks
+  (Step 4 chunk report: 0 for all three); their origin is unexplained, but they no longer
+  occur.
 - Stage 2 gate evidence strings were copied from 0.1.0 chunks and may no longer match the
   new text.

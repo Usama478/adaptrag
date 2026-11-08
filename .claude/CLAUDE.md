@@ -61,8 +61,8 @@ Decide per component by the cost of changing it later.
   install on the Mac (note 0012)
 - LLM: OpenAI gpt-4o-mini through the official `openai` client (`openai>=1.66`,
   Responses API), chosen by the owner for the lowest cost (note 0015)
-- Planned: langchain-text-splitters (RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter;
-  Stage 3 Step 4), BM25 and a cross-encoder reranker (Stage 5)
+- Splitting: langchain-text-splitters>=1.1.3, behind chunking/splitter.py, note 0020
+- Planned: BM25 and a cross-encoder reranker (Stage 5)
 ## Repo layout
 ```
 adaptrag/
@@ -88,7 +88,8 @@ adaptrag/
 │                                 # 0014 dense retrieval, 0015 answer generation,
 │                                 # 0016 Stage 2 gate, 0017 evaluation corpus split,
 │                                 # 0018 Markdown parser (pymupdf4llm),
-│                                 # 0019 strategy interface and registry
+│                                 # 0019 strategy interface and registry,
+│                                 # 0020 splitting strategies
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -99,6 +100,7 @@ adaptrag/
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
 │   ├── check_pdfs.py             # parse every PDF in a folder, print OK / REJECTED
 │   ├── chunk_pdfs.py             # chunk every PDF in a folder (fixed-size), print a summary
+│   ├── chunk_report.py           # every strategy per PDF, --show compares chunks (dev only)
 │   ├── fetch_corpus.py           # download missing corpus PDFs, record SHA-256, print counts
 │   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
@@ -137,11 +139,17 @@ adaptrag/
 │   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
 │   ├── chunking/
 │   │   ├── chunks.py             # TextChunk (in-memory chunk shape)
-│   │   └── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
+│   │   ├── fixed.py              # chunk_fixed_size() (control strategy, 200/40 words)
+│   │   ├── text_map.py           # join_blocks(), pages_for() (character offsets -> pages)
+│   │   ├── splitter.py           # split_with_offsets(), word_count(); the only module
+│   │   │                         # importing langchain_text_splitters
+│   │   └── segments.py           # chunk_prose(), chunk_table(), chunk_blocks() (shared rules)
 │   ├── strategies/
 │   │   ├── base.py               # Strategy ABC: name, params, chunk(), default dense retrieve()
 │   │   ├── registry.py           # STRATEGIES, DEFAULT_STRATEGY, build_strategy()
-│   │   └── fixed_size.py         # FixedSizeStrategy, PARAMS (the fixed-size settings)
+│   │   ├── fixed_size.py         # FixedSizeStrategy, PARAMS (the fixed-size settings)
+│   │   ├── recursive.py          # RecursiveStrategy (paragraph and sentence cuts, tables apart)
+│   │   └── section_aware.py      # SectionAwareStrategy (one section per chunk, heading prefix)
 │   ├── embedding/
 │   │   ├── base.py               # Embedder protocol (the seam)
 │   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached);
@@ -174,6 +182,10 @@ adaptrag/
 │   ├── test_corpus.py            # corpus manifest and its validation (unit)
 │   ├── test_strategies.py        # Strategy base class and registry (unit)
 │   ├── test_fixed_size_strategy.py    # FixedSizeStrategy matches the fixed-size chunker (unit)
+│   ├── test_text_map.py          # page map (unit)
+│   ├── test_splitter.py          # splitter wrapper and its offsets (unit)
+│   ├── test_recursive_strategy.py     # RecursiveStrategy (unit)
+│   ├── test_section_aware_strategy.py # SectionAwareStrategy (unit)
 │   ├── test_strategy_extensibility.py # test-only strategy through ingest and /query (database)
 │   ├── test_import_order.py      # each module imports in a fresh interpreter (no import loops)
 │   ├── test_fake_embedder.py     # fast
@@ -199,6 +211,7 @@ docker compose down                                # stop (NEVER add -v unless y
 python scripts/check_pdfs.py data/samples          # parse every sample PDF
 python scripts/inspect_pdf.py <pdf> <page>         # raw blocks and fonts for one page
 python scripts/chunk_pdfs.py data/samples          # chunk every sample PDF, print a summary
+python scripts/chunk_report.py data/samples [--show NAME]   # compare all strategies (dev folders only)
 python scripts/list_chunk_sets.py                  # stored chunk sets, chunk and embedding counts
 python scripts/list_documents.py                   # documents, status, upload file present?
 python scripts/reingest.py DOCUMENT_ID             # re-run ingestion (real model) for a document
@@ -307,6 +320,7 @@ once resolved to the wrong Python.
   to chunks and pages, never the model.
 - **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
   tests/test_import_order.py).
+- **Splitting:** Only chunking/splitter.py imports langchain_text_splitters.
 - **Typing:** every function typed; mypy strict must pass.
 - **Style:** ruff rules E, F, I, B, UP; line length 100. Files end with exactly one newline.
 - **Secrets:** `.env` is gitignored and dockerignored. CI uses a throwaway password.
@@ -394,7 +408,8 @@ Every strategy subclasses `Strategy` (`strategies/base.py`, an `abc.ABC`; note 0
 
 A registry maps names to classes.
 Adding a strategy = one new file + one registry line. Starting strategies:
-fixed-size (control), recursive with overlap, section-aware with parent retrieval.
+fixed_size (control), recursive and section_aware (heading-path prefix); parent retrieval
+is a Stage 5 switch.
  
 ## Rules the code must respect
 - Treat document text as untrusted; the system prompt tells the model to ignore
@@ -425,7 +440,7 @@ fixed-size (control), recursive with overlap, section-aware with parent retrieva
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 in progress, Step 3 (strategy interface and registry, note 0019).
+**Status: Stage 3 in progress, Step 4 (recursive and section-aware strategies, note 0020).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**
