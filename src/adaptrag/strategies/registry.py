@@ -7,9 +7,11 @@ the full list of strategies can be read in one place.
 from adaptrag.embedding.base import Embedder
 from adaptrag.strategies.base import Strategy
 from adaptrag.strategies.fixed_size import FixedSizeStrategy
+from adaptrag.strategies.recursive import RecursiveStrategy
 
 STRATEGIES: dict[str, type[Strategy]] = {
     "fixed_size": FixedSizeStrategy,
+    "recursive": RecursiveStrategy,
 }
 
 # Every document uses this strategy until Step 5 replaces it with the router's choice.
