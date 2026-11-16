@@ -95,12 +95,18 @@ adaptrag/
 │                                 # 0018 Markdown parser (pymupdf4llm),
 │                                 # 0019 strategy interface and registry,
 │                                 # 0020 splitting strategies, 0021 profiler and router,
-│                                 # 0022 Stage 3 gate, 0023 code-only stage mode
+│                                 # 0022 Stage 3 gate, 0023 code-only stage mode,
+│                                 # 0024 question set and verification, 0025 mini evaluation
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
-│   └── questions/                # real questions, one JSON per paper (Stage 4)
-│       └── paper_01.json         # 10 Stage 2 gate questions (verified by the owner)
+│   ├── llm_usage.jsonl           # one line per LLM call of the evaluation scripts (written
+│   │                             # by the owner's runs; the stage token budget reads it)
+│   ├── questions/
+│   │   ├── paper_01.json         # 10 Stage 2 gate questions (verified by the owner)
+│   │   └── generated/            # machine-verified questions, one JSON per dev document
+│   │                             # (written by scripts/generate_questions.py, note 0024)
+│   └── results/stage4/           # results.json, summary.md (written by scripts/mini_eval.py)
 ├── scripts/
 │   ├── answer.py                 # LLM answer with citations (real embedder + real LLM)
 │   ├── inspect_pdf.py            # raw PyMuPDF blocks (x0, y0, x1) and fonts for one page
@@ -109,9 +115,13 @@ adaptrag/
 │   ├── chunk_report.py           # every strategy per PDF, --show compares chunks (dev only)
 │   ├── fetch_corpus.py           # download missing corpus PDFs, record SHA-256, print counts
 │   ├── gate_check.py             # Stage 2 gate: answer + score verified questions (real LLM)
+│   ├── generate_questions.py     # Stage 4: draft + machine-verify dev questions (real LLM,
+│   │                             # costs money; --extra-round; note 0024)
 │   ├── ingest_folder.py          # real pipeline over a folder, prints routes (dev folders only)
 │   ├── list_chunk_sets.py        # one line per chunk set: chunk count, embedding count
 │   ├── list_documents.py         # one line per document: status, pages, upload file present?
+│   ├── mini_eval.py              # Stage 4: every strategy + router on the dev questions,
+│   │                             # rule outcomes, eval/results/stage4/ (real model, no LLM)
 │   ├── parser_report.py          # old vs Markdown parser per PDF (dev folders only)
 │   ├── profile_report.py         # document profile of every PDF (dev folders only)
 │   ├── query.py                  # top-k chunks for a question (real embedder), like the API
@@ -130,18 +140,32 @@ adaptrag/
 │   ├── vectorstore/
 │   │   └── pgvector.py           # embeddings_exist(), save_embeddings(), search() (all vector SQL)
 │   ├── llm/
-│   │   ├── base.py               # LLM protocol (the seam), LLMError
+│   │   ├── base.py               # LLM protocol (the seam: model_name, last_usage, complete()),
+│   │   │                         # TokenUsage, LLMError
 │   │   ├── openai_client.py      # OpenAILLM, get_openai_llm() (cached); the only module
 │   │   │                         # importing openai
 │   │   ├── provider.py           # get_app_llm() FastAPI dependency (503 without a key)
-│   │   └── fake.py               # FakeLLM (canned reply, call count, can raise) for tests
+│   │   └── fake.py               # FakeLLM (canned reply or a list of replies, call count,
+│   │                             # can raise) for tests
 │   ├── answering/
 │   │   ├── prompt.py             # build_prompt(): system rules + numbered <source> tags
 │   │   └── answer.py             # answer_question(): two-layer not-found, citation mapping
 │   ├── evaluation/
 │   │   ├── corpus.py             # CorpusEntry, parse_corpus(), load_corpus() (manifest rules)
-│   │   └── gate.py               # load_questions(), cited_ok(), retrieved_ok(), normalise(),
-│   │                             # gate_passed() (pure scoring rules, unit-tested)
+│   │   ├── gate.py               # load_questions(), cited_ok(), retrieved_ok(), normalise(),
+│   │   │                         # gate_passed() (pure scoring rules, unit-tested)
+│   │   ├── passages.py           # prose_windows(), table_passages(), plan_drafts() (seeded
+│   │   │                         # passages from parser blocks, note 0024)
+│   │   ├── generation.py         # generator/judge prompts (FROZEN, stage4-v1), reply
+│   │   │                         # parsing, checks 1-6, generate_for_document(), calibrate()
+│   │   ├── questions.py          # EvalQuestion, load_eval_questions() (both file kinds)
+│   │   ├── usage.py              # RecordingLLM, usage log, check_budget() (stage budget)
+│   │   ├── relevance.py          # match_kind(), first_relevant_rank(), evidence_status()
+│   │   ├── metrics.py            # recall_at_k(), mrr(), cluster bootstrap interval
+│   │   ├── analysis.py           # metric_row(), best single, oracle, paired outcomes
+│   │   ├── decisions.py          # rules fixed before the run: table budget, very short,
+│   │   │                         # router, ties, threshold proposal (note 0025)
+│   │   └── glued.py              # glued-word candidates from a tokenizer vocabulary
 │   ├── retrieval/
 │   │   ├── results.py            # ScoredChunk (chunk + pages + score = 1 - cosine distance)
 │   │   └── dense.py              # current_chunk_set_id(), retrieve_dense(), query limits
@@ -154,17 +178,20 @@ adaptrag/
 │   │   ├── text_map.py           # join_blocks(), pages_for() (character offsets -> pages)
 │   │   ├── splitter.py           # split_with_offsets(), word_count(); the only module
 │   │   │                         # importing langchain_text_splitters
-│   │   └── segments.py           # chunk_prose(), chunk_table(), chunk_blocks() (shared rules)
+│   │   └── segments.py           # chunk_prose(), chunk_table(), chunk_blocks() (shared rules);
+│   │                             # split_table_by_budget() (optional table token budget)
 │   ├── strategies/
 │   │   ├── base.py               # Strategy ABC: name, params, chunk(), default dense retrieve()
 │   │   ├── registry.py           # STRATEGIES, build_strategy()
 │   │   ├── fixed_size.py         # FixedSizeStrategy, PARAMS (the fixed-size settings)
 │   │   ├── recursive.py          # RecursiveStrategy (paragraph and sentence cuts, tables apart)
-│   │   └── section_aware.py      # SectionAwareStrategy (one section per chunk, heading prefix)
+│   │   └── section_aware.py      # SectionAwareStrategy (one section per chunk, heading prefix),
+│   │                             # heading_prefixes(), strip_heading_prefix()
 │   ├── embedding/
 │   │   ├── base.py               # Embedder protocol (the seam)
-│   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached);
-│   │   │                         # the only module importing sentence_transformers / torch
+│   │   ├── sentence_transformer.py  # SentenceTransformerEmbedder, get_embedder() (cached),
+│   │   │                         # get_vocabulary(); the only module importing
+│   │   │                         # sentence_transformers / torch
 │   │   ├── provider.py           # get_app_embedder() FastAPI dependency (lazy torch import)
 │   │   └── fake.py               # FakeEmbedder (hash-based, any dimension) for tests
 │   ├── parsing/
@@ -201,6 +228,16 @@ adaptrag/
 │   ├── test_router.py            # router rules and reasons (unit)
 │   ├── test_strategy_extensibility.py # test-only strategy through ingest and /query (database)
 │   ├── test_import_order.py      # each module imports in a fresh interpreter (no import loops)
+│   ├── test_passages.py          # passage selection for question generation (unit)
+│   ├── test_generation.py        # reply parsing, checks 1-6, generator/judge flows (FakeLLM)
+│   ├── test_eval_questions.py    # question loader with types; the owner set still loads (unit)
+│   ├── test_usage.py             # usage log, stage budget guard, RecordingLLM (unit)
+│   ├── test_relevance.py         # relevance rule, section-aware prefix helpers (unit)
+│   ├── test_metrics.py           # Recall@k, MRR, cluster bootstrap (unit, hand-computed)
+│   ├── test_analysis.py          # table rows, best single, oracle, paired outcomes (unit)
+│   ├── test_decisions.py         # ADOPT/KEEP, very short, router, ties, threshold (unit)
+│   ├── test_glued.py             # glued-word detector with a fake vocabulary (unit)
+│   ├── test_table_token_budget.py     # table token budget in segments and strategies (unit)
 │   ├── test_fake_embedder.py     # fast
 │   ├── test_embedder_real.py     # @pytest.mark.slow: loads the real model
 │   ├── test_llm_real.py          # @pytest.mark.slow + skipped without a key: real OpenAI
@@ -240,6 +277,12 @@ python scripts/parser_report.py data/samples       # old vs Markdown parser (dev
 python scripts/profile_report.py data/samples      # document profiles (dev folders only)
 python scripts/token_stats.py data/samples         # real token counts per chunk (loads the model)
 python scripts/token_stats.py data/samples --show-over   # also list chunks over max_tokens
+python scripts/generate_questions.py               # Stage 4: machine-verified dev questions
+                                                   # (real LLM calls; costs money; skips
+                                                   # documents that already have a file)
+python scripts/generate_questions.py --extra-round # one more round, only if a target was missed
+python scripts/mini_eval.py                        # Stage 4: results table, rule outcomes,
+                                                   # eval/results/stage4/ (real model, no LLM)
 python -m pytest -m slow                           # slow tests only (real model, real LLM
                                                    # if the key is set; not in CI; LLM costs money)
 ```
@@ -333,9 +376,18 @@ once resolved to the wrong Python.
   `FakeLLM(reply="Fake answer [1].")`; real calls only in `tests/test_llm_real.py`
   (slow, skipped without a key). Never log or print the API key. SDK errors and empty
   replies become `LLMError` (route answers 502). The model cites `[N]`; our code maps N
-  to chunks and pages, never the model.
+  to chunks and pages, never the model. Every `LLM` sets `last_usage` (`TokenUsage` or
+  None) after a call; only evaluation scripts read it.
+- **Evaluation scripts that call the LLM** wrap it in `RecordingLLM`
+  (`evaluation/usage.py`): one line per call in `eval/llm_usage.jsonl`, and
+  `check_budget()` before the first call (10,000,000 input / 1,000,000 output tokens per
+  stage, AUTONOMOUS.md). The prompts and checks in `evaluation/generation.py` are frozen
+  (prompt version `stage4-v1`, note 0024): a change needs a new version and a note.
 - **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
-  tests/test_import_order.py).
+  tests/test_import_order.py). `RecursiveStrategy` and `SectionAwareStrategy` take an
+  optional `table_token_budget` (default None = off, and then absent from `params`, so
+  stored chunk sets keep their cache key). The registry builds the default; only
+  `scripts/mini_eval.py` builds the budget variants (note 0025).
 - **Splitting:** Only chunking/splitter.py imports langchain_text_splitters.
 - **Routing:** routing rules are only tuned on dev documents (notes 0017, 0021).
 - **Typing:** every function typed; mypy strict must pass.
@@ -463,12 +515,23 @@ is a Stage 5 switch.
 - Ablations: remove rerank, hybrid, parent retrieval.
 - Use cluster bootstrap (resample documents, not questions) for confidence intervals.
 - Report router pick frequencies and a written failure analysis.
-- Hand-verify every question. One command (e.g. `make eval`) reproduces results.
+- Questions are machine-verified, not hand-verified (owner's decision, note 0024): an LLM
+  drafts them from parser passages and every question must pass the six checks in
+  `evaluation/generation.py` (quote found in the document, pages computed by code, extra
+  evidence locations, a separate judge prompt, lexical overlap under 80%, no
+  near-duplicates). The pipeline is frozen after Stage 4 and reused untuned for the test
+  documents. Always report the cost with the numbers: no human checked the questions, they
+  are worded from the parser's text, and the judge is the generator's model. The 10
+  owner-verified paper_01 questions stay a separate set and a separate row.
+- Relevance (note 0025): a chunk is relevant if it contains the whole normalised evidence,
+  or a run of at least half of its words; the section-aware prefix does not count.
+- One command reproduces results: `python scripts/mini_eval.py` (Stage 4, dev only).
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 3 done (profiler, router, three strategies; gate PASS, note 0022).
-Next: Stage 4 (mini evaluation).
+**Status: Stage 4 code written, awaiting the owner's run (machine-verified questions,
+mini evaluation, rules fixed before the run; notes 0024 and 0025, results `TO FILL`).
+Stage 3 done (profiler, router, three strategies; gate PASS, note 0022).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,
 PASS, note 0016).**

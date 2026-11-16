@@ -9,7 +9,7 @@ from functools import lru_cache
 
 from openai import APIError, OpenAI
 
-from adaptrag.llm.base import LLM, LLMError
+from adaptrag.llm.base import LLM, LLMError, TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,13 @@ class OpenAILLM:
         self._max_output_tokens = max_output_tokens
         self._temperature = temperature
         self._client = OpenAI(api_key=api_key, timeout=timeout_seconds, max_retries=MAX_RETRIES)
+        # Tokens of the most recent call, for the evaluation usage log. Scripts run one
+        # call at a time; the API never reads it.
+        self.last_usage: TokenUsage | None = None
 
     def complete(self, system: str, user: str) -> str:
+        # Reset first, so a failed call can never report the previous call's tokens.
+        self.last_usage = None
         try:
             # Two calls instead of one with **kwargs: temperature is sent only when it is
             # set, and mypy can still check every argument. No `reasoning` parameter:
@@ -62,6 +67,7 @@ class OpenAILLM:
         if usage is None:
             logger.warning("LLM %s: token usage missing from the response", self.model_name)
         else:
+            self.last_usage = TokenUsage(usage.input_tokens, usage.output_tokens)
             logger.info(
                 "LLM %s: %d input tokens, %d output tokens",
                 self.model_name,

@@ -3,14 +3,17 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 3 DONE** (gate PASS, note 0022). Next: **Stage 4** (mini
-  evaluation). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
+- **Current stage:** **Stage 4 code written, awaiting the owner's run** (mini evaluation;
+  notes 0024 and 0025, results still `TO FILL`). Stage 3 done (gate PASS, note 0022).
+  Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
 - **Last updated:** 2026-11-16
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** 379 passed, 7 deselected (normal run).
-  Decision notes 0001-0022 (0008 superseded by note 0018); 0023 (code-only stage mode)
-  added 2026-11-16.
+- **Tests:** 379 passed, 7 deselected (last owner run, before Stage 4). Stage 4 adds 138
+  tests, so the expected normal run is 517 passed, 7 deselected.
+  TO FILL from owner's run: the real test count after Stage 4.
+  Decision notes 0001-0025 (0008 superseded by note 0018); 0023 (code-only stage mode),
+  0024 (question set and verification) and 0025 (mini evaluation) added 2026-11-16.
 - **Branch:** Stage 4 on `stage4-mini-evaluation` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
@@ -26,7 +29,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
 | 2 | Baseline RAG | Done (gate 10/10, note 0016) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Done |
-| 4 | Mini evaluation | Not started |
+| 4 | Mini evaluation | Code written, awaiting the owner's run |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
 | 6 | Full evaluation | Not started |
 | 7 | Notebooks and multi-document search | Not started |
@@ -36,8 +39,58 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 Parallel task: evaluation question set. **Deferred to Stage 4 (owner's decision).**
 `eval/questions/paper_01.json` holds the 10 Stage 2 gate questions (evidence filled and
 verified by the owner; used for the Stage 2 gate, note 0016).
-`eval/question_format_example.json` shows the format (made-up examples, not real questions). At Stage 4: LLM drafts questions in that
-format, owner verifies each against the PDF and sets `"verified": true`.
+`eval/question_format_example.json` shows the format (made-up examples, not real questions).
+Stage 4 (owner's decision, 2026-11-16): an LLM drafts the questions in that format and code
+plus an LLM judge verify them (`"verification": "machine"`, note 0024); no manual checking.
+They are written to `eval/questions/generated/`; `paper_01.json` stays a separate set.
+
+## Stage 4 plan (code-only stage, `.claude/stages/stage4.md`)
+Purpose: measure how well each strategy and the router find the right chunk on the 9 dev
+documents, with machine-verified questions, and measure the known issues. Claude Code
+writes everything in one go and runs nothing; the owner runs the checklist.
+
+1. Question set: `scripts/generate_questions.py` (passages from the parser, generator and
+   judge prompts, six checks, calibration on the owner set, targets 70 / 15 / 10, one
+   optional extra round). Note 0024.
+2. Relevance rule: whole evidence, or a run of at least half of its words; the
+   section-aware prefix does not count.
+3. Metrics and one command: Recall@1/5/10, MRR at 10, cluster bootstrap;
+   `scripts/mini_eval.py` writes `eval/results/stage4/`. Note 0025.
+4. Known issues, each with a rule fixed before the run: glued-word detector (measure
+   only), table token budget (ADOPT or KEEP), "very short" rule, router rule v1 (KEEP v1 or
+   a candidate threshold).
+5. Tests for every pure function; flows with `FakeLLM`.
+6. Docs: notes 0024 and 0025, CLAUDE.md, this file.
+
+Run checklist (owner):
+1. `docker compose up -d db && python -m alembic upgrade head`
+2. the checks chain from CLAUDE.md (expected: 517 passed, 7 deselected)
+3. `python scripts/generate_questions.py` (costs money)
+4. `python scripts/mini_eval.py`
+
+## Stage 4 log
+1. **Code written (2026-11-16, not run yet).**
+   - Questions: `evaluation/passages.py` (prose windows, table passages, far-apart pairs,
+     seeded spread), `evaluation/generation.py` (prompts `stage4-v1`, reply parsing, checks
+     1-6, judge and location flows, keep rule, targets, calibration),
+     `evaluation/questions.py` (`EvalQuestion`, `load_eval_questions`),
+     `scripts/generate_questions.py`.
+   - Usage log and budget: `evaluation/usage.py` (`RecordingLLM`, `check_budget`);
+     `LLM.last_usage` (`TokenUsage`) added to the seam, set by `OpenAILLM` and `FakeLLM`;
+     `FakeLLM(replies=[...])` scripts several calls.
+   - Evaluation: `evaluation/relevance.py`, `metrics.py`, `analysis.py`, `decisions.py`,
+     `glued.py`; `scripts/mini_eval.py`.
+   - Table token budget: `chunk_table(..., token_budget, count_tokens)` and
+     `split_table_by_budget()` in `chunking/segments.py`; `RecursiveStrategy` and
+     `SectionAwareStrategy` take `table_token_budget` (default None: params and chunks
+     unchanged). `heading_prefixes()` and `strip_heading_prefix()` in
+     `strategies/section_aware.py`. `get_vocabulary()` in
+     `embedding/sentence_transformer.py`.
+   - No migration, no new dependency, no new setting.
+   - Tests: 138 new (expected 517 passed, 7 deselected).
+     TO FILL from owner's run: test count.
+2. **Owner's run:** TO FILL from owner's run: question totals and calibration (note 0024),
+   results table and rule outcomes (note 0025).
  
 ## Stage 3 plan (approved, revised 2026-11-08)
 Purpose: let each document get one of several industry-standard splitters automatically,
@@ -481,6 +534,21 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   - Frontend (Stage 8): React + Vite.
   - Hosting: the host is chosen at Stage 9, not before.
   - OpenAI spending: at most $5 per stage.
+- Stage 4 (notes 0024, 0025; taken by Claude Code under the code-only rules, for the owner
+  to review):
+  - Evidence quotes are 8 to 25 words (the lower limit is ours: half of a very short quote
+    would match almost anything under the relevance rule).
+  - The judge sees the question, the answer and the quotes only, not the passage.
+  - Extra evidence entries are the answer with 15 words on each side, from one block, on
+    pages that hold no evidence yet.
+  - When more than 10 questions pass for a document, multi-section and table ones are
+    kept first.
+  - A strategy "loses" on a document only by Recall@5 hits; best single and oracle compare
+    hits, then MRR, and fixed_size wins an exact tie.
+  - "Failed under the router" means no relevant chunk in the top 5.
+  - `table_token_budget` is left out of the params when it is None, so stored chunk sets
+    keep their cache key.
+  - Token usage is read from `LLM.last_usage` (added to the seam) by `RecordingLLM`.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules. pymupdf4llm 2.0 is
@@ -543,6 +611,15 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   36/160 (22%). Table rows turn into far more tokens than words, so the end of large table
   chunks is not embedded. Candidate Stage 4 fix: measure table chunks in tokens (note 0022).
 - The three scripts exit with a traceback on an unregistered strategy name.
+- Stage 4 questions are machine-verified, worded from the parser's text, and judged by the
+  model that wrote them (note 0024): absolute numbers are optimistic.
+- The glued-word detector flags real compounds and camel-case names too (note 0025).
+- `LLM.last_usage` holds the latest call only; it is safe in scripts (one call at a time),
+  not something the API should read under concurrent requests.
+- With a table token budget, a row too big for one chunk is cut between words, and a single
+  word over the budget is kept whole (note 0025).
+- `eval/llm_usage.jsonl` and `eval/results/stage4/` are not gitignored: the owner decides
+  whether to commit them.
 ## Future stretch ("Stage 10", after Stage 6, tuned on dev documents only)
 - Semantic chunking (owner's own binary-search boundary method).
 - LLM-guided chunking.
@@ -588,17 +665,36 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    headings per 1,000 words, and why is rule v1 a hypothesis and not a result?
 8. What did the Stage 3 gate show, and why can't 9/10 versus 10/10 tell you which strategy
    is better?
+## Explain-aloud questions (Stage 4, answer without notes)
+1. Why does the relevance rule accept half of a split evidence quote?
+2. Why are passages for question generation taken from the parser's blocks and not from any
+   strategy's chunks?
+3. Why are evidence pages computed by code instead of asked from the LLM?
+4. What does "verified" mean for the generated questions, and what are the three ways this
+   set is weaker than a hand-verified one?
+5. Why does the bootstrap resample documents instead of questions, and what would happen
+   to the interval if it resampled questions?
+6. Why are the ADOPT/KEEP, "very short" and router rules written before the run?
+7. Why is the oracle only an upper bound, and why is "best single strategy" optimistic
+   too?
+8. Why is the section-aware prefix removed before matching evidence, and why can Stage 4
+   still not say whether boundaries or the prefix help?
+9. Why is `table_token_budget` left out of the params when it is off?
+10. Why does the script refuse to run when its token estimate would cross the budget,
+    instead of stopping when the budget is reached?
+11. Why can the glued-word detector only report candidates?
+12. Why does the judge get its own prompt, and why is it still a weak check?
 
 ## Open items / notes for the next chat
-- Stage 4 runs in code-only stage mode from `.claude/stages/stage4.md` (note 0023):
-  questions for dev documents built more independently, several evidence locations per
-  question, Recall@5 and MRR per strategy.
-- Token budget for table chunks.
+- Stage 4 code is written (code-only stage, note 0023). The owner runs the run checklist
+  in "Stage 4 plan"; fixes follow in the same chat. Then fill every
+  `TO FILL from owner's run` in notes 0024 and 0025 and in this file.
+- After the run: follow-up prompt for the table token budget default (only if the rule
+  printed ADOPT), and the owner's decision on `retrieval_min_score`.
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
 - Documents ingested before Step 2/4 lack chunks or embeddings; use `scripts/reingest.py`.
 - Decided 2026-11-16: questions are machine-verified plus an LLM judge (no manual work).
-  CLAUDE.md still says "Hand-verify every question"; Stage 4 replaces that line with the
-  rule from note 0024.
+  CLAUDE.md now states the rule from note 0024 instead of "Hand-verify every question".
 - Update this file at the end of the chat.

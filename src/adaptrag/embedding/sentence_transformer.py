@@ -51,8 +51,23 @@ class SentenceTransformerEmbedder:
         token_ids = self._model.tokenizer(text, add_special_tokens=True, truncation=False)
         return len(token_ids["input_ids"])
 
+    def vocabulary(self) -> frozenset[str]:
+        """Every entry of the tokenizer's vocabulary (whole words and "##" word pieces).
+
+        Not part of the `Embedder` protocol: only the Stage 4 glued-word detector needs it.
+        """
+        return frozenset(self._model.tokenizer.get_vocab())
+
 
 @lru_cache
 def get_embedder(model_name: str, device: str, query_instruction: str) -> Embedder:
     """Return the embedder for these settings, loading the model on the first call only."""
     return SentenceTransformerEmbedder(model_name, device, query_instruction)
+
+
+def get_vocabulary(model_name: str, device: str, query_instruction: str) -> frozenset[str]:
+    """The tokenizer vocabulary of the (cached) embedder for these settings."""
+    embedder = get_embedder(model_name, device, query_instruction)
+    if not isinstance(embedder, SentenceTransformerEmbedder):
+        raise TypeError("the vocabulary is only available from the sentence-transformers embedder")
+    return embedder.vocabulary()

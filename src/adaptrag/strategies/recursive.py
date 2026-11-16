@@ -7,6 +7,7 @@ the cuts go, not how big the chunks are.
 from adaptrag.chunking.chunks import TextChunk
 from adaptrag.chunking.fixed import DEFAULT_OVERLAP_WORDS, DEFAULT_SIZE_WORDS
 from adaptrag.chunking.segments import chunk_blocks
+from adaptrag.embedding.base import Embedder
 from adaptrag.parsing.blocks import ParsedDocument
 from adaptrag.strategies.base import Strategy
 
@@ -20,19 +21,42 @@ PARAMS: dict[str, int] = {
     "version": 1,
 }
 
+TABLE_TOKEN_BUDGET_PARAM = "table_token_budget"
+
 
 class RecursiveStrategy(Strategy):
-    """Recursive splitting of the prose between tables; each table is chunked on its own."""
+    """Recursive splitting of the prose between tables; each table is chunked on its own.
+
+    table_token_budget: None (the default, and what the registry builds) keeps tables on
+    the word budget only. A number also keeps every table chunk within that many model
+    tokens and repeats the header row (Stage 4 experiment, note 0025).
+    """
 
     name = "recursive"
+
+    def __init__(self, embedder: Embedder, table_token_budget: int | None = None) -> None:
+        super().__init__(embedder)
+        if table_token_budget is not None and table_token_budget < 1:
+            raise ValueError(f"table_token_budget must be 1 or more, got {table_token_budget}")
+        self._table_token_budget = table_token_budget
 
     @property
     def params(self) -> dict[str, int | float | str | bool]:
         # A copy, so a caller changing the result cannot change the cache key.
-        return dict(PARAMS)
+        params: dict[str, int | float | str | bool] = dict(PARAMS)
+        # Left out when there is no budget, so chunk sets stored before Stage 4 still match.
+        if self._table_token_budget is not None:
+            params[TABLE_TOKEN_BUDGET_PARAM] = self._table_token_budget
+        return params
 
     def chunk(self, doc: ParsedDocument) -> list[TextChunk]:
-        pieces = chunk_blocks(doc.blocks, PARAMS["size_words"], PARAMS["overlap_words"])
+        pieces = chunk_blocks(
+            doc.blocks,
+            PARAMS["size_words"],
+            PARAMS["overlap_words"],
+            self._table_token_budget,
+            self.embedder.count_tokens,
+        )
         return [
             TextChunk(index=index, text=text, page_start=page_start, page_end=page_end)
             for index, (text, page_start, page_end) in enumerate(pieces)
