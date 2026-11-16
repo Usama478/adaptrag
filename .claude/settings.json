@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Edit(./.env)",
+      "Read(./data/test_set/**)",
+      "Edit(./data/test_set/**)"
+    ]
+  }
+}

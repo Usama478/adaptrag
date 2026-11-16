@@ -68,7 +68,11 @@ Decide per component by the cost of changing it later.
 adaptrag/
 ├── .claude/
 │   ├── CLAUDE.md                 # this guide
-│   └── PROGRESS.md               # current state, log, lessons learned
+│   ├── PROGRESS.md               # current state, log, lessons learned
+│   ├── AUTONOMOUS.md             # rules for code-only stages (note 0023)
+│   ├── settings.json             # Claude Code permissions: denies Bash, web access, .env
+│   │                             # and data/test_set/
+│   └── stages/                   # one stage file per code-only stage (stage4.md)
 ├── .github/workflows/ci.yml      # lint, format, mypy, migrations, alembic check, tests
 ├── alembic.ini                   # NO database URL here (env.py reads settings)
 ├── migrations/
@@ -91,7 +95,7 @@ adaptrag/
 │                                 # 0018 Markdown parser (pymupdf4llm),
 │                                 # 0019 strategy interface and registry,
 │                                 # 0020 splitting strategies, 0021 profiler and router,
-│                                 # 0022 Stage 3 gate
+│                                 # 0022 Stage 3 gate, 0023 code-only stage mode
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -340,6 +344,11 @@ once resolved to the wrong Python.
 - **Commits:** small and meaningful. CI must stay green on `main`; experiment on branches.
 ## Rules for coding agents
 - One step per task. Don't build ahead.
+- Code-only stages (started by the owner with `/goal`, with a stage file in
+  `.claude/stages/`) follow `.claude/AUTONOMOUS.md`. During such a stage it overrides "one
+  step per task": write every sub-step of the stage file in one go, and end with the final
+  report from `AUTONOMOUS.md`. Every other rule here still applies, including "never run
+  commands" (note 0023).
 - Coding agents only create and edit files. They never run terminal commands (no tests,
   linters, scripts, docker or git). The owner runs all commands.
 - Work belongs on a branch named `stageN-stepM-short-name` (the owner creates it and commits).

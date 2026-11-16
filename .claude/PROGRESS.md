@@ -5,15 +5,20 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 ## Current status
 - **Current stage:** **Stage 3 DONE** (gate PASS, note 0022). Next: **Stage 4** (mini
   evaluation). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
-- **Last updated:** 2026-11-09
+- **Last updated:** 2026-11-16
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
 - **Tests:** 379 passed, 7 deselected (normal run).
-  Decision notes 0001-0016 (0008 is "Proposed").
-- **Branch:** Stage 3 Step 4 on `stage3-step4-splitters` (owner commits after checks).
+  Decision notes 0001-0022 (0008 superseded by note 0018); 0023 (code-only stage mode)
+  added 2026-11-16.
+- **Branch:** Stage 4 on `stage4-mini-evaluation` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
   `TO FILL from owner's run` placeholders. The owner reviews the diff in chat before merging.
+- **Code-only stage mode (from Stage 4, note 0023):** the owner starts a stage with `/goal`;
+  Claude Code writes the whole stage (code, tests, docs) from its stage file in
+  `.claude/stages/`, following `.claude/AUTONOMOUS.md`, and still runs nothing. The owner
+  runs the stage's run checklist and checks the results before the next stage starts.
 ## Stage checklist
 | Stage | Name | Status |
 | --- | --- | --- |
@@ -468,6 +473,14 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   separate from `/query`, 503 without a key, 502 on LLM failure.
 - Stage 2 gate (note 0016): cited_ok scored, retrieved_ok reported only, >= 10 scored
   questions and >= 80% cited_ok, only verified entries, an LLM failure stops the run.
+- Owner's decisions, 2026-11-16:
+  - Code-only stage mode with `/goal` (note 0023): Claude Code writes a whole stage without
+    running anything; the owner runs and checks each stage before the next one starts.
+  - Evaluation questions are machine-verified (checks in code) plus an LLM judge, not
+    hand-verified. The credibility cost is written up in note 0024 (Stage 4).
+  - Frontend (Stage 8): React + Vite.
+  - Hosting: the host is chosen at Stage 9, not before.
+  - OpenAI spending: at most $5 per stage.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules. pymupdf4llm 2.0 is
@@ -571,18 +584,21 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
    ingest.py?
 6. Why do we compute splitter offsets ourselves, and why does section-aware group by
    heading_path instead of using MarkdownHeaderTextSplitter?
+7. Why does the router decide by the numbered-heading share instead of the heading count or
+   headings per 1,000 words, and why is rule v1 a hypothesis and not a result?
 8. What did the Stage 3 gate show, and why can't 9/10 versus 10/10 tell you which strategy
    is better?
 
 ## Open items / notes for the next chat
-- Stage 4 plan first: questions for dev documents built more independently, several
-  evidence locations per question, Recall@5 and MRR per strategy, decision on
-  machine-verified questions.
+- Stage 4 runs in code-only stage mode from `.claude/stages/stage4.md` (note 0023):
+  questions for dev documents built more independently, several evidence locations per
+  question, Recall@5 and MRR per strategy.
 - Token budget for table chunks.
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.
 - Documents ingested before Step 2/4 lack chunks or embeddings; use `scripts/reingest.py`.
-- Stage 4 decision: owner wants no manual work; hand-verified questions become
-  machine-verified with spot checks unless the owner decides otherwise.
+- Decided 2026-11-16: questions are machine-verified plus an LLM judge (no manual work).
+  CLAUDE.md still says "Hand-verify every question"; Stage 4 replaces that line with the
+  rule from note 0024.
 - Update this file at the end of the chat.
