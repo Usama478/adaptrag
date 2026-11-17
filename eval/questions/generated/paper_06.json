@@ -1,0 +1,377 @@
+{
+  "paper": "paper_06_two_column_b.pdf",
+  "corpus_id": "paper_06",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_06_r0_d01",
+      "type": "factual",
+      "question": "What is the purpose of stochastic gradient descent in deep learning?",
+      "answer": "to minimize the loss",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "SGD optimizes the parameters Θ of the network, so as to minimize the loss"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.0,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d02",
+      "type": "factual",
+      "question": "What is the purpose of learning the parameters Θ1 and Θ2?",
+      "answer": "to minimize the loss ℓ",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "the parameters Θ1, Θ2 are to be learned so as to minimize the loss ℓ"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d04",
+      "type": "factual",
+      "question": "What does the gradient descent optimization fail to consider according to the passage?",
+      "answer": "the normalization",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "the gradient descent optimization does not take into account the fact that the normalization takes place."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d05",
+      "type": "factual",
+      "question": "What is the purpose of the constant ǫ in the Batch Normalizing Transform?",
+      "answer": "for numerical stability",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "ǫ is a constant added to the mini-batch variance for numerical stability."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.4,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d06",
+      "type": "factual",
+      "question": "What does the BN transform ensure during model training?",
+      "answer": "less internal covariate shift",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "this ensures that as the model is training, layers can continue learning on input distributions that exhibit less internal covariate shift"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d16",
+      "type": "table",
+      "question": "What is the output size for the inception (4e) layer?",
+      "answer": "14×14×1024",
+      "evidence": [
+        {
+          "page": 11,
+          "text": "| inception (4e) | stride 2 | 14×14×1024 | 3 | 0 | 128 | 192 | 192 | 256 | max + pass through |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.4,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r0_d20",
+      "type": "multi_section",
+      "question": "What improvement in validation accuracy was achieved by shuffling training examples more thoroughly?",
+      "answer": "about 1%",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "This led to about 1% improvements in the validation accuracy"
+        },
+        {
+          "page": 6,
+          "text": "we found that with Batch Normalization it is not necessary."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.222,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_06_r1_d18",
+      "type": "multi_section",
+      "question": "How much faster does BN-x5 train compared to Inception to achieve 72.2% accuracy?",
+      "answer": "14 times fewer steps",
+      "evidence": [
+        {
+          "page": 7,
+          "text": "BN-x5 needs 14 times fewer steps than Inception to reach the 72.2% accuracy."
+        },
+        {
+          "page": 7,
+          "text": "the reduction in internal covariate shift allows deep networks with Batch Normalization"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.545,
+      "answerable_without_document": false,
+      "round": 1
+    },
+    {
+      "id": "paper_06_r1_d19",
+      "type": "multi_section",
+      "question": "What was the top-5 validation error achieved by the ensemble of batch-normalized networks on ImageNet classification?",
+      "answer": "4.9%",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "we improve upon the best published result on ImageNet classification: reaching 4.9% top-5 validation error (and 4.8% test error), exceeding the accuracy of human raters."
+        },
+        {
+          "page": 7,
+          "text": "Inception reached the accuracy of 72.2% after 31 · 106 training steps."
+        },
+        {
+          "page": 8,
+          "text": "| 5.82% | | BN-Inception ensemble | 224 | 144 | 6 | 20.1% | **4.9%*** |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.545,
+      "answerable_without_document": false,
+      "round": 1
+    },
+    {
+      "id": "paper_06_r1_d20",
+      "type": "multi_section",
+      "question": "What error rate did the BN-Inception ensemble achieve on the ImageNet test set?",
+      "answer": "4.82% top-5 error",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "*BN-Inception ensemble has reached 4.82% top-5 error on the 100000 images of the test set of the ImageNet as reported by the test server."
+        },
+        {
+          "page": 1,
+          "text": "the layers need to continuously adapt to the new distribution."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.778,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 9,
+      "kept_after_round": 9,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 8,
+        "quote_not_found": 0,
+        "lexical_overlap": 1,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 2,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.0,
+        0.6,
+        0.429,
+        0.4,
+        0.333,
+        0.75,
+        0.0,
+        0.8,
+        0.333,
+        0.4,
+        0.625,
+        0.222
+      ],
+      "extra_candidates": 5,
+      "extra_evidence": 0
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 10,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 4,
+        "quote_not_found": 1,
+        "lexical_overlap": 1,
+        "near_duplicate": 4,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.6,
+        0.333,
+        0.0,
+        0.429,
+        0.0,
+        0.333,
+        0.167,
+        0.7,
+        0.6,
+        0.8,
+        0.333,
+        0.4,
+        0.545,
+        0.545,
+        0.778
+      ],
+      "extra_candidates": 3,
+      "extra_evidence": 3
+    }
+  ]
+}

@@ -1,0 +1,368 @@
+{
+  "paper": "doc_08_poorly_structured.pdf",
+  "corpus_id": "doc_08",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "doc_08_r0_d01",
+      "type": "factual",
+      "question": "What type of savers does Berkshire Hathaway believe their individual holders are?",
+      "answer": "once-a-saver, always-a-saver",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "We believe Berkshire’s individual holders largely to be of the once-a-saver, always-a-saver variety."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d04",
+      "type": "factual",
+      "question": "What was the cash dividend received from Coca-Cola in 1994?",
+      "answer": "$75 million",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "The cash dividend we received from Coke in 1994 was $75 million."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d06",
+      "type": "factual",
+      "question": "What percentage of Berkshire's outstanding shares was repurchased in 2022?",
+      "answer": "1.2%",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "At Berkshire, we directly increased your interest in our unique collection of businesses by repurchasing 1.2% of the company’s outstanding shares."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d07",
+      "type": "factual",
+      "question": "What do Berkshire shareholders trust Charlie and the author to do with their money?",
+      "answer": "treat their money as we do our own",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "trust us to treat their money as we do our own"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d08",
+      "type": "factual",
+      "question": "Which company does Berkshire own 100% of?",
+      "answer": "BNSF",
+      "evidence": [
+        {
+          "page": 7,
+          "text": "In addition to those eight investees, Berkshire owns 100% of BNSF and 92% of BH Energy, each with earnings that exceed the $3 billion mark"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d11",
+      "type": "factual",
+      "question": "What does Charlie believe about foolish gamblers compared to patient investors?",
+      "answer": "they will not do as well as the patient investor",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "The world is full of foolish gamblers, and they will not do as well as the patient investor."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.375,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d12",
+      "type": "factual",
+      "question": "What is one rule mentioned for becoming a great investor?",
+      "answer": "Find a very smart high-grade partner",
+      "evidence": [
+        {
+          "page": 9,
+          "text": "Find a very smart high-grade partner – preferably slightly older than you – and then listen very carefully to what he says."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.0,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r0_d18",
+      "type": "multi_section",
+      "question": "What was the increase in Berkshire's insurance float from 2021 to 2022?",
+      "answer": "from $147 billion to $164 billion",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "float increased during 2022 from $147 billion to $164 billion"
+        },
+        {
+          "page": 2,
+          "text": "these people live well, they eventually dispense most of their funds to philanthropic organizations."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.286,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "doc_08_r1_d18",
+      "type": "multi_section",
+      "question": "How many individual sales did See's register on Friday and Saturday combined?",
+      "answer": "6,621",
+      "evidence": [
+        {
+          "page": 9,
+          "text": "On Friday, the doors were open from noon until 5 p.m., and our candy counters rang up 2,690 individual sales."
+        },
+        {
+          "page": 9,
+          "text": "On Saturday, See’s registered an additional 3,931 transactions between 7 a.m. and 4:30 p.m."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": true,
+      "round": 1
+    },
+    {
+      "id": "doc_08_r1_d20",
+      "type": "multi_section",
+      "question": "What significant shift did Berkshire make in 1967 to improve its business operations?",
+      "answer": "shifted our resources toward insurance and other non-textile operations",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "And then came a stroke of good luck: National Indemnity became available in 1967, and we shifted our resources toward insurance and other non-textile operations."
+        },
+        {
+          "page": 6,
+          "text": "Berkshire now enjoys major ownership in an unmatched collection of huge and diversified businesses."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.375,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 9,
+      "kept_after_round": 9,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 6,
+        "quote_not_found": 2,
+        "lexical_overlap": 2,
+        "near_duplicate": 1,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.571,
+        0.667,
+        0.571,
+        0.333,
+        0.5,
+        0.8,
+        0.8,
+        0.375,
+        0.0,
+        0.286,
+        0.286,
+        0.333
+      ],
+      "extra_candidates": 0,
+      "extra_evidence": 0
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 8,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 5,
+        "quote_not_found": 1,
+        "lexical_overlap": 2,
+        "near_duplicate": 4,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.333,
+        0.4,
+        0.125,
+        0.571,
+        0.333,
+        0.429,
+        0.818,
+        0.8,
+        0.375,
+        0.167,
+        0.6,
+        0.667,
+        0.571,
+        0.375
+      ],
+      "extra_candidates": 0,
+      "extra_evidence": 0
+    }
+  ]
+}

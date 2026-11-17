@@ -1,0 +1,405 @@
+{
+  "paper": "paper_09_table_heavy_b.pdf",
+  "corpus_id": "paper_09",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_09_r0_d01",
+      "type": "factual",
+      "question": "What is the primary focus of the SentEval toolkit?",
+      "answer": "fine-tuning classifiers on top of embeddings",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "SentEval focuses on fine-tuning classifiers on top of embeddings."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.25,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d04",
+      "type": "factual",
+      "question": "What is the highest score recorded in the first passage?",
+      "answer": "96",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "93 93 87 90 89 90 96 96 95 95"
+        },
+        {
+          "page": 20,
+          "text": "96 94 92 98 97 95 91 94"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.0,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d07",
+      "type": "factual",
+      "question": "What model does SPECTER rely on for fine-tuning?",
+      "answer": "SciBERT",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "SPECTER (Cohan et al., 2020a) relies on the pre-trained SciBERT (Beltagy et al., 2019) variant instead and fine-tunes on citation graphs."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.4,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d08",
+      "type": "factual",
+      "question": "Which model has the highest average performance in classification tasks?",
+      "answer": "ST5-XXL",
+      "evidence": [
+        {
+          "page": 7,
+          "text": "ST5-XXL has the highest average performance, 3% ahead of"
+        },
+        {
+          "page": 4,
+          "text": "Figure 2: Similarity of MTEB datasets. We use the best model on MTEB STS (ST5-XXL, see Table 1) to embed 100 samples for each dataset. Cosine similarities between the averaged"
+        },
+        {
+          "page": 5,
+          "text": "42.34 | 86.06 | 54.71 | 38.47 | 81.66 | 29.91 | 57.87 | | ST5-XXL | **73.42** | **43.71** | 85.06 | 56.43 | 42.24 | **82.63** | 30.08 |"
+        },
+        {
+          "page": 20,
+          "text": "ST5-XXL"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d10",
+      "type": "factual",
+      "question": "What does MTEB stand for?",
+      "answer": "Massive Text Embedding Benchmark",
+      "evidence": [
+        {
+          "page": 9,
+          "text": "we presented the Massive Text Embedding Benchmark (MTEB)"
+        },
+        {
+          "page": 1,
+          "text": "models are constantly being proposed without proper evaluation. To solve this problem, we introduce the Massive Text Embedding Benchmark (MTEB). MTEB spans 8 embedding tasks covering a total of 58 datasets and 112 languages."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d11",
+      "type": "factual",
+      "question": "How many languages does Tatoeba provide sentences for?",
+      "answer": "112 languages",
+      "evidence": [
+        {
+          "page": 16,
+          "text": "Tatoeba provides sets of sentences (1000 sentences each) for 112 languages"
+        },
+        {
+          "page": 9,
+          "text": "(MTEB). Consisting of 8 text embedding tasks with up to 15 datasets each and covering 112 languages, MTEB aims to provide reliable embedding performance estimates. By opensourcing MTEB alongside a leaderboard, we"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d14",
+      "type": "table",
+      "question": "What is the average score for the coCondenser-msmarco model?",
+      "answer": "52.35",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "| coCondenser-msmarco | 64.71 | 37.64 | 81.74 | 51.84 | 32.96 | 76.47 | 29.50 | 52.35 |"
+        },
+        {
+          "page": 21,
+          "text": "29.91<br>30.08<br><br> | | Average | 41.97 | 42.06 | 38.33 | 45.45 | 48.72 | 52.35 | 56.00<br>4 | 0.28 | 45.21 | 34.95 | 56. | 6<br>56.53 | 52.44 |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.4,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r0_d19",
+      "type": "multi_section",
+      "question": "What is the goal of the SprintDuplicateQuestions dataset?",
+      "answer": "to classify a pair of sentences as duplicates or not",
+      "evidence": [
+        {
+          "page": 16,
+          "text": "The goal is to classify a pair of sentences as duplicates or not."
+        },
+        {
+          "page": 16,
+          "text": "The goal is to classify a pair of tweets as paraphrases or not."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_09_r1_d15",
+      "type": "table",
+      "question": "What is the label for the SprintDuplicateQuestions dataset?",
+      "answer": "1",
+      "evidence": [
+        {
+          "page": 18,
+          "text": "| SprintDuplicateQuestions | Franklin U722 USB modem signal strength | How do I know if my Franklin U772 USB Modem has a<br>weak signal ? | 1 |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": true,
+      "round": 1
+    },
+    {
+      "id": "paper_09_r1_d18",
+      "type": "multi_section",
+      "question": "What is the highest average performance model mentioned in the first passage?",
+      "answer": "ST5-XXL",
+      "evidence": [
+        {
+          "page": 7,
+          "text": "ST5-XXL has the highest average performance, 3% ahead of"
+        },
+        {
+          "page": 17,
+          "text": "MTEB does not contain any code datasets that could be used to benchmark code models"
+        },
+        {
+          "page": 4,
+          "text": "Figure 2: Similarity of MTEB datasets. We use the best model on MTEB STS (ST5-XXL, see Table 1) to embed 100 samples for each dataset. Cosine similarities between the averaged"
+        },
+        {
+          "page": 5,
+          "text": "42.34 | 86.06 | 54.71 | 38.47 | 81.66 | 29.91 | 57.87 | | ST5-XXL | **73.42** | **43.71** | 85.06 | 56.43 | 42.24 | **82.63** | 30.08 |"
+        },
+        {
+          "page": 8,
+          "text": "a cluster of highly performant, but slow models. Depending on the task at hand, GTRXXL, ST5-XXL or SGPT-5.8B may be the right choice, see Section 4.2. SGPT-5.8B comes with the additional"
+        },
+        {
+          "page": 20,
+          "text": "ST5-XXL"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 9,
+      "kept_after_round": 9,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 1,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 7,
+        "quote_not_found": 0,
+        "lexical_overlap": 0,
+        "near_duplicate": 1,
+        "judge_invalid": 0,
+        "judge_not_answerable": 2,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.25,
+        0.0,
+        0.0,
+        0.4,
+        0.5,
+        0.5,
+        0.6,
+        0.75,
+        0.0,
+        0.4,
+        0.375,
+        0.333
+      ],
+      "extra_candidates": 14,
+      "extra_evidence": 7
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 6,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 1,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 7,
+        "quote_not_found": 1,
+        "lexical_overlap": 2,
+        "near_duplicate": 2,
+        "judge_invalid": 0,
+        "judge_not_answerable": 1,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.25,
+        0.333,
+        0.571,
+        0.667,
+        0.571,
+        0.8,
+        0.75,
+        0.0,
+        0.333,
+        0.429,
+        0.857
+      ],
+      "extra_candidates": 10,
+      "extra_evidence": 5
+    }
+  ]
+}

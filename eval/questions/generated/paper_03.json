@@ -1,0 +1,368 @@
+{
+  "paper": "paper_03_single_column_b.pdf",
+  "corpus_id": "paper_03",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_03_r0_d02",
+      "type": "factual",
+      "question": "What is the role of the generative model in the adversarial nets framework?",
+      "answer": "to produce fake currency",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "the generative model can be thought of as analogous to a team of counterfeiters, trying to produce fake currency"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d03",
+      "type": "factual",
+      "question": "What is the special case referred to when both models are multilayer perceptrons?",
+      "answer": "adversarial nets",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "we refer to this special case as adversarial nets"
+        },
+        {
+          "page": 3,
+          "text": "In the next section, we present a theoretical analysis of adversarial nets, essentially showing that the training criterion allows one to recover the data generating distribution as"
+        },
+        {
+          "page": 6,
+          "text": "| 121_±_1_._6 | **2110**_±_**50** | | Deep GSN [6] | 214_±_1_._1 | 1890_±_29 | | Adversarial nets | **225**_±_**2** | **2057**_±_**26** |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.286,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d05",
+      "type": "factual",
+      "question": "What framework extends generalized denoising auto-encoders?",
+      "answer": "generative stochastic network (GSN)",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "Prominent recent work in this area includes the generative stochastic network (GSN) framework"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.167,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d06",
+      "type": "factual",
+      "question": "What does the training criterion allow one to recover in adversarial nets?",
+      "answer": "the data generating distribution",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "the training criterion allows one to recover the data generating distribution"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d08",
+      "type": "factual",
+      "question": "What value of k was used in the experiments for the discriminator steps?",
+      "answer": "1",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "We used k = 1, the least expensive option, in our experiments."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d10",
+      "type": "factual",
+      "question": "What value does C(G) achieve when pg equals pdata?",
+      "answer": "− log 4",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "C ( G ) achieves the value − log 4"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d12",
+      "type": "factual",
+      "question": "What type of model is suggested to be reasonable for use despite lacking theoretical guarantees?",
+      "answer": "multilayer perceptrons",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "the excellent performance of multilayer perceptrons in practice suggests that they are a reasonable model to use despite their lack of theoretical guarantees."
+        },
+        {
+          "page": 1,
+          "text": "recovering the training data distribution and D equal to 21everywhere.In the case where_G_and_D_are defined by multilayer perceptrons, the entire system can be trained with backpropagation. There is no need for any Markov"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d14",
+      "type": "factual",
+      "question": "What do the samples from the generator net demonstrate about the model's training set memorization?",
+      "answer": "the model has not memorized the training set",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "the model has not memorized the training set"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.3,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r0_d15",
+      "type": "factual",
+      "question": "What framework has been demonstrated as viable in the paper?",
+      "answer": "adversarial modeling framework",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "This paper has demonstrated the viability of the adversarial modeling framework"
+        },
+        {
+          "page": 2,
+          "text": "The adversarial modeling framework is most straightforward to apply when the models are both multilayer perceptrons. To learn the"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.75,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_03_r1_d18",
+      "type": "multi_section",
+      "question": "What is the main focus of the proposed adversarial nets framework?",
+      "answer": "generative model against an adversary",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "The generative model is pitted against an adversary: a discriminative model"
+        },
+        {
+          "page": 6,
+          "text": "this method of estimating the likelihood has somewhat high variance"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.0,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 9,
+      "kept_after_round": 9,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 1,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 9,
+        "quote_not_found": 1,
+        "lexical_overlap": 0,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.333,
+        0.286,
+        0.167,
+        0.571,
+        0.5,
+        0.429,
+        0.667,
+        0.3,
+        0.75
+      ],
+      "extra_candidates": 13,
+      "extra_evidence": 4
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 3,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 6,
+        "quote_not_found": 5,
+        "lexical_overlap": 0,
+        "near_duplicate": 6,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.5,
+        0.0,
+        0.167,
+        0.571,
+        0.5,
+        0.429,
+        0.625,
+        0.333,
+        0.0
+      ],
+      "extra_candidates": 1,
+      "extra_evidence": 1
+    }
+  ]
+}

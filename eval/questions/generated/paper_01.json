@@ -1,0 +1,387 @@
+{
+  "paper": "paper_01_single_column.pdf",
+  "corpus_id": "paper_01",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_01_r0_d03",
+      "type": "factual",
+      "question": "What mechanism do end-to-end memory networks use?",
+      "answer": "recurrent attention mechanism",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "based on a recurrent attention mechanism instead of sequencealigned recurrence"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.2,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d09",
+      "type": "factual",
+      "question": "What is the BLEU score achieved by the big transformer model on the English-to-German translation task?",
+      "answer": "28.4",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "establishing a new state-of-the-art BLEU score of 28 . 4."
+        },
+        {
+          "page": 1,
+          "text": "quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 Englishto-German translation task, improving over the existing best results, including"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.2,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d10",
+      "type": "factual",
+      "question": "Who are the authors of the paper on layer normalization?",
+      "answer": "Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton",
+      "evidence": [
+        {
+          "page": 10,
+          "text": "Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton. Layer normalization."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d11",
+      "type": "factual",
+      "question": "Who authored the paper on deep residual learning for image recognition?",
+      "answer": "Kaiming He",
+      "evidence": [
+        {
+          "page": 11,
+          "text": "Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recognition."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.714,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d12",
+      "type": "factual",
+      "question": "Who are the authors of the paper titled 'Building a large annotated corpus of english: The penn treebank'?",
+      "answer": "Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini",
+      "evidence": [
+        {
+          "page": 12,
+          "text": "Mitchell P Marcus, Mary Ann Marcinkiewicz, and Beatrice Santorini. Building a large annotated corpus of english: The penn treebank."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.7,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d13",
+      "type": "factual",
+      "question": "What is the opinion expressed about the Law's application?",
+      "answer": "it should be just",
+      "evidence": [
+        {
+          "page": 14,
+          "text": "The Law will never be perfect , but its application should be just - this is what we are missing , in my opinion ."
+        },
+        {
+          "page": 15,
+          "text": "The Law will never be perfect , but its application should be just - this is what we are missing , in my opinion ."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d18",
+      "type": "multi_section",
+      "question": "What is the main advantage of additive attention over dot product attention for large values of dk?",
+      "answer": "additive attention outperforms dot product attention",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "additive attention outperforms dot product attention without scaling for larger values of dk"
+        },
+        {
+          "page": 15,
+          "text": "the heads clearly learned to perform different tasks."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r0_d19",
+      "type": "multi_section",
+      "question": "How many layers are in the encoder and decoder of the model?",
+      "answer": "6",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "The encoder is composed of a stack of N = 6 identical layers."
+        },
+        {
+          "page": 3,
+          "text": "The decoder is also composed of a stack of N = 6 identical layers."
+        },
+        {
+          "page": 9,
+          "text": "--- | --- | --- | --- | --- | --- | | base | 6 | 512 | 2048 | 8 | 64 | 64 | 0.1 | 0.1 |"
+        },
+        {
+          "page": 13,
+          "text": "of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of the verb ‘making’, completing"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_01_r1_d18",
+      "type": "multi_section",
+      "question": "What is shared between the embedding layers and the pre-softmax linear transformation in the model?",
+      "answer": "the same weight matrix",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"
+        },
+        {
+          "page": 11,
+          "text": "Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Fethi Bougares, Holger Schwenk, and Yoshua Bengio. Learning phrase representations using rnn encoder-decoder for statistical machine translation."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.778,
+      "answerable_without_document": false,
+      "round": 1
+    },
+    {
+      "id": "paper_01_r1_d19",
+      "type": "multi_section",
+      "question": "What BLEU score did the Transformer achieve on the English-to-French translation task?",
+      "answer": "41.8",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "our model establishes a new single-model state-of-the-art BLEU score of 41.8"
+        },
+        {
+          "page": 8,
+          "text": "we use a rate of Pdrop = 0 . 1."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.25,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 8,
+      "kept_after_round": 8,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 1,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 8,
+        "quote_not_found": 1,
+        "lexical_overlap": 2,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        1.0,
+        0.875,
+        0.2,
+        0.2,
+        0.5,
+        0.714,
+        0.7,
+        0.5,
+        0.6,
+        0.6
+      ],
+      "extra_candidates": 6,
+      "extra_evidence": 3
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 8,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 3,
+        "quote_not_found": 2,
+        "lexical_overlap": 4,
+        "near_duplicate": 3,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        1.0,
+        0.8,
+        0.2,
+        0.8,
+        0.5,
+        0.167,
+        0.5,
+        0.2,
+        0.857,
+        0.5,
+        0.571,
+        0.714,
+        0.2,
+        0.778,
+        0.25
+      ],
+      "extra_candidates": 3,
+      "extra_evidence": 2
+    }
+  ]
+}

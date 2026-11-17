@@ -1,7 +1,7 @@
 # 0025: Mini evaluation design and results
 
-Status: Accepted (code written; results are `TO FILL` until the owner's run)
-Date: 2026-11-16
+Status: Accepted (owner's run done 2026-11-18; results and interpretation below)
+Date: 2026-11-16, results filled 2026-11-18
 
 ## Context
 Stage 3 built three strategies and router rule v1 as a hypothesis (note 0021). Stage 4
@@ -68,25 +68,104 @@ rule BEFORE the run (note 0023), and the script prints each rule's outcome.
 - **Section-aware: boundaries or prefix?** Stage 4 cannot separate them: the strategy
   differs from recursive in both. The Stage 5 switch will.
 
-## Results (owner's run)
-- Results table (6 rows, R@1 / R@5 / R@10 / MRR / intervals / N): TO FILL from owner's
-  run: `eval/results/stage4/summary.md`.
-- Owner-verified paper_01 rows: TO FILL from owner's run.
-- Best single strategy: TO FILL from owner's run.
-- Router vs best single vs oracle, in one sentence: TO FILL from owner's run.
-- Ties: TO FILL from owner's run.
-- Per type and per document: TO FILL from owner's run.
-- Evidence split / missing per variant: TO FILL from owner's run.
-- Glued-word candidates per document, and questions with glued evidence: TO FILL from
-  owner's run.
-- Table token budget: table chunks over 512 without / with, table hits@5 without / with,
-  outcome ADOPT or KEEP: TO FILL from owner's run.
-- Very short: dev word counts and outcome: TO FILL from owner's run.
-- Router: documents where the routed strategy loses, outcome KEEP v1 or candidate
-  threshold: TO FILL from owner's run.
-- Top-1 scores and threshold proposal: TO FILL from owner's run.
-- Failure analysis (written by the owner from the failed-question list): TO FILL from
-  owner's run.
+## Results (owner's run, `eval/results/stage4/summary.md`)
+Embedding model BAAI/bge-small-en-v1.5, parser 0.2.0, top 10, exact search, 9 dev
+documents, 90 machine-verified questions. Intervals: cluster bootstrap over documents,
+10,000 resamples, seed 20261116.
+
+| row | R@1 | R@5 | R@10 | MRR | 95% R@5 | 95% MRR | N |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| fixed_size | 0.511 | 0.867 | 0.944 | 0.659 | [0.778, 0.956] | [0.547, 0.760] | 90 |
+| recursive | 0.567 | 0.844 | 0.900 | 0.691 | [0.756, 0.933] | [0.592, 0.790] | 90 |
+| section_aware | 0.500 | 0.844 | 0.911 | 0.653 | [0.744, 0.933] | [0.590, 0.719] | 90 |
+| router (rule v1) | 0.489 | 0.844 | 0.911 | 0.647 | [0.744, 0.933] | [0.588, 0.708] | 90 |
+| best single (fixed_size) | 0.511 | 0.867 | 0.944 | 0.659 | [0.778, 0.956] | [0.547, 0.760] | 90 |
+| oracle (upper bound) | 0.600 | 0.900 | 0.933 | 0.721 | [0.822, 0.978] | [0.625, 0.814] | 90 |
+
+Best single strategy and oracle are chosen on these same dev numbers, so both are
+optimistic.
+
+- **Table token budget variants:** recursive+tb512 R@1 0.556, R@5 0.844, R@10 0.889, MRR
+  0.682; section_aware+tb512 R@1 0.500, R@5 0.844, R@10 0.922, MRR 0.652.
+- **Owner-verified paper_01 set (10 questions, one document, no interval):** fixed_size R@5
+  0.900, MRR 0.814; recursive R@5 1.000, MRR 0.833; section_aware (routed) R@5 0.900, MRR
+  0.912.
+- **Best single strategy:** fixed_size (Recall@5 0.867). By MRR the best is recursive
+  (0.691): the two measures disagree.
+- **Ties:** recursive and section_aware are both 0.844 on Recall@5. Recursive alone finds
+  4 questions (paper_01_r0_d12, paper_03_r0_d02, paper_03_r1_d18, paper_09_r0_d10);
+  section_aware alone finds 4 other questions (paper_02_r0_d03, paper_04_r0_d10,
+  paper_06_r1_d19, paper_07_r0_d14).
+- **Paired outcomes (top 5, only first / only second):** fixed_size vs recursive 7 / 5;
+  fixed_size vs section_aware 6 / 4; recursive vs section_aware 4 / 4.
+- **Per question type, hits@5 (fixed_size / recursive / section_aware / router):** factual
+  (60) 51 / 51 / 50 / 50; table (6) 4 / 2 / 3 / 3; multi_section (24) 23 / 23 / 23 / 23.
+- **Per document:** the routed strategy is section_aware for 8 documents and recursive for
+  doc_08. The best strategy by hits@5 differs per document (recursive for paper_01,
+  paper_03, paper_05 and paper_09; fixed_size for paper_04, paper_06 and paper_07;
+  section_aware for paper_02 and doc_08); the full table is in `summary.md`.
+- **Evidence split / missing:** 0 / 0 for every variant (fixed_size, recursive,
+  section_aware and both budget variants).
+- **Glued-word candidates:** paper_01 331, paper_02 499, paper_03 199, paper_04 542,
+  paper_05 94, paper_06 160, paper_07 186, doc_08 71, paper_09 1632. Questions whose
+  evidence contains a candidate: 51 of 90 machine-verified, 3 of 10 owner-verified.
+- **Table token budget:** table chunks over 512 tokens, recursive 25/125 without the
+  budget and 0/151 with it; section_aware 30/126 and 0/156. Table hits@5: recursive 2/6
+  and 2/6; section_aware 3/6 and 3/6. Outcome: **ADOPT**.
+- **Very short:** no dev document is under 2,000 words (smallest: paper_07, 2733 words,
+  5 pages). Outcome: **NO RULE**.
+- **Router rule v1:** the routed strategy loses on 4 documents (paper_01, paper_03,
+  paper_07, paper_09). Outcome: **KEEP v1**.
+- **Top-1 scores and threshold:** answerable questions (n 90) min 0.548, median 0.728, max
+  0.901; off-topic questions (n 180) min 0.320, median 0.443, max 0.607. At 0.55, 1
+  answerable question falls below and 4 off-topic questions pass. The script's proposal,
+  0.567, puts 268 of 270 scores on the right side.
+
+## Interpretation
+- **No strategy separates on dev.** Recall@5 is 0.867 (fixed_size), 0.844 (recursive),
+  0.844 (section_aware) and 0.844 (router); the intervals overlap almost entirely.
+  Recall@5 and MRR disagree on the best strategy (fixed_size vs recursive). The paired wins
+  cancel (4 to 7 questions each way). A difference of one or two questions out of 90 is
+  noise.
+- **Routing has little to gain on dev.** The oracle (best strategy per document) adds only
+  3 questions over the best single strategy (0.900 vs 0.867), and it is chosen on the same
+  data, so it is an upper bound. Router rule v1 is KEEP v1 under the rule written before
+  the run, but dev data does not support it: the router is not better than any fixed
+  strategy here. Revisit it after Stage 5.
+- **The questions are easy.** Recall@5 is 84-87% for every strategy and most questions
+  share much of their wording with their evidence (note 0024). That compresses the
+  differences between strategies.
+- **Finding: the document title in the section-aware prefix.** Section-aware puts the full
+  heading path on every chunk, and the path starts with the document title. "What does MTEB
+  stand for?" (paper_09) fails under the router because every chunk starts with "MTEB:
+  Massive Text Embedding Benchmark", so the chunk that answers looks like all the others;
+  fixed_size and recursive find it. This is the hypothesis for the Stage 5 prefix switch
+  (full prefix / no prefix / prefix without the title).
+- **Failure patterns (14 questions fail under the router):**
+  - Invalid questions (at least 2, note 0024): "highest score recorded in the first
+    passage" and "number of layers in ResNet-34".
+  - Exact numbers and table cells (for example the baseline+++ mAP, the coCondenser
+    average, BERT-base on MNLI): dense search is weak at them; BM25 in Stage 5 is the
+    candidate fix.
+  - A reference-list question (paper_01, the Penn Treebank authors): the References
+    heading was not detected, so the references sit under "7 Conclusion".
+  - The title prefix (MTEB, above).
+- **Split evidence is 0 for every variant.** Chunks overlap by 40 words and quotes are at
+  most 25 words, so every quote fits whole in some chunk. The "half of a quote" part of the
+  relevance rule was never needed in this run.
+- **Glued-word detector: inconclusive.** Its most frequent candidates are real words that
+  the tokenizer splits into pieces (Transformer, decoder, dataset, ImageNet), so it measures
+  the tokenizer's vocabulary, not the parser's glued words. A better method is a Stage 5
+  item (BM25 is sensitive to glued words).
+- **Table token budget: ADOPT.** Table chunks over 512 tokens fall from 25 to 0
+  (recursive) and from 30 to 0 (section_aware), and table hits stay at 2/6 and 3/6. The
+  evidence is weak (6 table questions), but text past 512 tokens is never embedded, so the
+  budget is right in principle. The default became 512 in the Stage 4 close-out.
+- **Very short rule: NO RULE.** No dev document is under 2,000 words.
+- **Threshold: kept at 0.55 (owner's decision).** The proposal of 0.567 was fitted on the
+  same data and fixes 3 cases. An off-topic question that passes the threshold reaches the
+  LLM, which answers NOT_FOUND, while a higher threshold could refuse real questions: the
+  lowest answerable score was 0.548.
 
 ## Known limits
 - 9 documents and about 10 questions each: small. Differences of a few questions between

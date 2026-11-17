@@ -96,7 +96,8 @@ adaptrag/
 │                                 # 0019 strategy interface and registry,
 │                                 # 0020 splitting strategies, 0021 profiler and router,
 │                                 # 0022 Stage 3 gate, 0023 code-only stage mode,
-│                                 # 0024 question set and verification, 0025 mini evaluation
+│                                 # 0024 question set and verification, 0025 mini evaluation,
+│                                 # 0026 Stage 4 gate
 ├── eval/
 │   ├── corpus.json               # benchmark documents, frozen dev/test split (note 0017)
 │   ├── question_format_example.json   # format only (made-up examples)
@@ -156,7 +157,7 @@ adaptrag/
 │   │   │                         # gate_passed() (pure scoring rules, unit-tested)
 │   │   ├── passages.py           # prose_windows(), table_passages(), plan_drafts() (seeded
 │   │   │                         # passages from parser blocks, note 0024)
-│   │   ├── generation.py         # generator/judge prompts (FROZEN, stage4-v1), reply
+│   │   ├── generation.py         # generator/judge prompts (FROZEN, stage4-v2), reply
 │   │   │                         # parsing, checks 1-6, generate_for_document(), calibrate()
 │   │   ├── questions.py          # EvalQuestion, load_eval_questions() (both file kinds)
 │   │   ├── usage.py              # RecordingLLM, usage log, check_budget() (stage budget)
@@ -315,7 +316,7 @@ once resolved to the wrong Python.
   LLM settings: `openai_api_key` (SecretStr, only in `.env`, empty in `.env.example`),
   `llm_model` (gpt-4o-mini), `llm_temperature` (0.0; `None` = not sent),
   `llm_timeout_seconds` (30), `llm_max_output_tokens` (500), `retrieval_min_score`
-  (0.55, provisional, recalibrate in Stage 4). The value `None` in an env var means
+  (0.55, kept after the Stage 4 measurement, note 0025). The value `None` in an env var means
   Python None (`env_parse_none_str`).
 - **Database URL:** one setting, `ADAPTRAG_DATABASE_URL`. Not in `alembic.ini`.
   Never log the URL (it holds the password).
@@ -386,10 +387,12 @@ once resolved to the wrong Python.
   a change needs a new version and a note. `generate_questions.py` stops if a generated
   file has another prompt version.
 - **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
-  tests/test_import_order.py). `RecursiveStrategy` and `SectionAwareStrategy` take an
-  optional `table_token_budget` (default None = off, and then absent from `params`, so
-  stored chunk sets keep their cache key). The registry builds the default; only
-  `scripts/mini_eval.py` builds the budget variants (note 0025).
+  tests/test_import_order.py). `RecursiveStrategy` and `SectionAwareStrategy` take a
+  `table_token_budget` that defaults to `DEFAULT_TABLE_TOKEN_BUDGET` (512, defined in
+  `chunking/segments.py`; ADOPT in note 0025) and is part of `params`, so of the cache key.
+  `None` turns it off and leaves it out of `params`. The registry builds the default;
+  `scripts/mini_eval.py` passes the budget explicitly (None for its base rows, 512 for the
+  "+tb512" rows) so the Stage 4 run still reproduces.
 - **Splitting:** Only chunking/splitter.py imports langchain_text_splitters.
 - **Routing:** routing rules are only tuned on dev documents (notes 0017, 0021).
 - **Typing:** every function typed; mypy strict must pass.
@@ -532,10 +535,10 @@ is a Stage 5 switch.
 ## Stage plan and current status
 Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
-**Status: Stage 4 code written, awaiting the owner's run (machine-verified questions,
-mini evaluation, rules fixed before the run; notes 0024 and 0025, results `TO FILL`).
-The question pipeline was fixed to prompt version `stage4-v2` after the v1 run missed every
-target (note 0024, `.claude/stages/stage4_v2.md`); delete the v1 question files, then rerun.
+**Status: Stage 4 done (gate PASS, note 0026). Next: Stage 5.
+Stage 4: machine-verified questions (prompt version `stage4-v2`, note 0024) and the mini
+evaluation with rules fixed before the run (note 0025). No strategy separates on dev; the
+router is not better than the fixed strategies.
 Stage 3 done (profiler, router, three strategies; gate PASS, note 0022).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,

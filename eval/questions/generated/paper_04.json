@@ -1,0 +1,376 @@
+{
+  "paper": "paper_04_two_column_c.pdf",
+  "corpus_id": "paper_04",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_04_r0_d01",
+      "type": "factual",
+      "question": "What does BERT stand for?",
+      "answer": "Bidirectional Encoder Representations from Transformers",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "BERT , which stands for B idirectional E ncoder R epresentations from T ransformers."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d02",
+      "type": "factual",
+      "question": "What does BERT use for pre-training that differs from Radford et al. (2018)?",
+      "answer": "masked language models",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "BERT uses masked language models to enable pretrained deep bidirectional representations."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.111,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d03",
+      "type": "factual",
+      "question": "What is an effective method for transfer learning in computer vision?",
+      "answer": "fine-tune models pre-trained with ImageNet",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "an effective recipe is to fine-tune models pre-trained with ImageNet"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.167,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d04",
+      "type": "factual",
+      "question": "What percentage of WordPiece tokens are masked in each sequence during training?",
+      "answer": "15%",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "we mask 15% of all WordPiece tokens in each sequence at random."
+        },
+        {
+          "page": 13,
+          "text": "tokens. The LM masking is applied after WordPiece tokenization with a uniform masking rate of 15%, and no special consideration given to partial word pieces."
+        },
+        {
+          "page": 16,
+          "text": "2. Question: Does MLM pre-training converge slower than LTR pre-training, since only 15% of words are predicted in each batch rather than every word?"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d06",
+      "type": "factual",
+      "question": "What batch size was used for fine-tuning in the GLUE tasks?",
+      "answer": "32",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "We use a batch size of 32 and fine-tune for 3 epochs over the data for all GLUE tasks."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.714,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d08",
+      "type": "factual",
+      "question": "What model was added to improve the LTR system's performance on SQuAD?",
+      "answer": "BiLSTM",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "we added a randomly initialized BiLSTM on top."
+        },
+        {
+          "page": 9,
+          "text": "of BERT. These contextual embeddings are used as input to a randomly initialized two-layer 768-dimensional BiLSTM before the classification layer."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.125,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d09",
+      "type": "factual",
+      "question": "What is the F1 score difference between the best performing method and fine-tuning the entire model?",
+      "answer": "0.3",
+      "evidence": [
+        {
+          "page": 9,
+          "text": "only 0.3 F1 behind fine-tuning the entire model."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.455,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d10",
+      "type": "factual",
+      "question": "What is the major contribution mentioned regarding deep bidirectional architectures?",
+      "answer": "further generalizing these findings",
+      "evidence": [
+        {
+          "page": 9,
+          "text": "Our major contribution is further generalizing these findings to deep bidirectional architectures"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.714,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d18",
+      "type": "multi_section",
+      "question": "What is the GLUE score achieved by BERT?",
+      "answer": "80.5%",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "pushing the GLUE score to 80.5% (7.7% point absolute improvement)"
+        },
+        {
+          "page": 8,
+          "text": "removing NSP hurts performance significantly on QNLI, MNLI, and SQuAD 1.1."
+        },
+        {
+          "page": 6,
+          "text": "4.6% absolute accuracy improvement. On the official GLUE leaderboard10 , BERTLARGE obtains a score of 80.5, compared to OpenAI GPT, which obtains 72.8 as of the date of writing."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_04_r0_d19",
+      "type": "multi_section",
+      "question": "How many Cloud TPUs were used for training BERTLARGE?",
+      "answer": "16 Cloud TPUs",
+      "evidence": [
+        {
+          "page": 13,
+          "text": "Training of BERTLARGE was performed on 16 Cloud TPUs (64 TPU chips total)."
+        },
+        {
+          "page": 13,
+          "text": "Training of BERTBASE was performed on 4 Cloud TPUs in Pod configuration (16 TPU chips total)."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": false,
+      "round": 0
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 12,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 6,
+        "quote_not_found": 2,
+        "lexical_overlap": 0,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.5,
+        0.111,
+        0.167,
+        0.5,
+        0.714,
+        0.125,
+        0.455,
+        0.714,
+        0.667,
+        0.286,
+        0.5,
+        0.667
+      ],
+      "extra_candidates": 5,
+      "extra_evidence": 4
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 7,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 6,
+        "quote_not_found": 4,
+        "lexical_overlap": 2,
+        "near_duplicate": 1,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.111,
+        0.0,
+        0.429,
+        0.667,
+        0.667,
+        0.375,
+        1.0,
+        0.667,
+        0.5,
+        0.818
+      ],
+      "extra_candidates": 1,
+      "extra_evidence": 0
+    }
+  ]
+}

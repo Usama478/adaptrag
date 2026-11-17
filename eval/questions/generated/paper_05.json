@@ -1,0 +1,419 @@
+{
+  "paper": "paper_05_short.pdf",
+  "corpus_id": "paper_05",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_05_r0_d01",
+      "type": "factual",
+      "question": "What is the maximum fee per party for the proposed method implemented on Ethereum smart contracts?",
+      "answer": "2.6 USD",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "the fee per party is at most 2.6 USD."
+        },
+        {
+          "page": 2,
+          "text": "the fee per party is at most 2.6 USD."
+        },
+        {
+          "page": 4,
+          "text": "and recalling that product through immediate notification of the owner. The owner pays at most 2.6 USD to be able to promptly implement measures such as repair or replacement of the product."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.3,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d02",
+      "type": "factual",
+      "question": "What was the total value of counterfeit products in international trade reported by the OECD in 2016?",
+      "answer": "509 billion USD",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "counterfeit products in international trade totaled 509 billion USD in 2016"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.556,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d03",
+      "type": "factual",
+      "question": "What does the proposed method use to encrypt blockchain addresses?",
+      "answer": "the manufacturer’s public key",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "by encrypting blockchain addresses by using the manufacturer’s public key"
+        },
+        {
+          "page": 2,
+          "text": "- 2) The owner encrypts the recipient’s address AR using the secret token and the manufacturer’s public key to obtain Enc(AR)."
+        },
+        {
+          "page": 3,
+          "text": "proof is verified in Step 7. PMC calls VC with the recipient’s encrypted address Enc(AR), the manufacturer’s public key Q, and the proof generated in Step 5 as arguments to verify this proof."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d04",
+      "type": "factual",
+      "question": "What is the maximum transaction fee per party for distribution in the proposed method?",
+      "answer": "2.6 USD",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "the fee per party is at most 2.6 USD"
+        },
+        {
+          "page": 2,
+          "text": "the fee per party is at most 2.6 USD"
+        },
+        {
+          "page": 4,
+          "text": "and recalling that product through immediate notification of the owner. The owner pays at most 2.6 USD to be able to promptly implement measures such as repair or replacement of the product."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.375,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d06",
+      "type": "factual",
+      "question": "What is the purpose of the POMS system?",
+      "answer": "managing product ownership",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "POMS [3] is a system for managing product ownership using the blockchain to prevent distribution of counterfeits in the post-supply chain."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d08",
+      "type": "factual",
+      "question": "Who can execute the registration processes in MMC?",
+      "answer": "a designated administrator",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "These registration processes can be executed only by a designated administrator."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d11",
+      "type": "factual",
+      "question": "What type of proof is used to verify the recipient's encrypted address?",
+      "answer": "zero-knowledge proof",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "we use a zero-knowledge proof for this purpose."
+        },
+        {
+          "page": 1,
+          "text": "ensures distribution among legitimate supply chain parties while concealing their blockchain address by using a zero-knowledge proof to prove their authenticity. We implement the proposed method on Ethereum smart contracts and evaluate"
+        },
+        {
+          "page": 2,
+          "text": "legitimate parties when they ship and receive the product. Accordingly, the proposed method uses a zero-knowledge proof to allow supply chain parties to prove their authenticity while hiding their blockchain addresses."
+        },
+        {
+          "page": 4,
+          "text": "the proposed method. We use ZoKrates [11], a toolbox of zk-SNARKs, for implementation of the zero-knowledge proof."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.125,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d18",
+      "type": "multi_section",
+      "question": "What is the maximum transaction fee per party mentioned in the document?",
+      "answer": "2.6 USD",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "the total transaction fees required for one party is at most 2.6 USD"
+        },
+        {
+          "page": 4,
+          "text": "the transaction fee per party to be at most 2.6 USD"
+        },
+        {
+          "page": 1,
+          "text": "based on transaction fees. The results show that the fee per party is at most 2.6 USD."
+        },
+        {
+          "page": 2,
+          "text": "the transaction fees for distribution and find that the fee per party is at most 2.6 USD."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d19",
+      "type": "multi_section",
+      "question": "What was the total value of counterfeit products in international trade reported by the OECD in 2016, and what is the maximum fee an owner pays for product tracking and recall?",
+      "answer": "509 billion USD; 2.6 USD",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "counterfeit products in international trade totaled 509 billion USD in 2016"
+        },
+        {
+          "page": 4,
+          "text": "the owner pays at most 2.6 USD to be able to promptly implement measures"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.438,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_05_r0_d20",
+      "type": "multi_section",
+      "question": "What version of Solidity is used for writing the smart contracts?",
+      "answer": "0.5.11",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "We use Solidity version 0.5.11 [9] to write the smart contracts and the JavaScript Virtual Machine environment provided by Remix [10] to evaluate the proposed"
+        },
+        {
+          "page": 4,
+          "text": "We use ZoKrates [11], a toolbox of zk-SNARKs, for implementation of the zero-knowledge proof."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": false,
+      "round": 0
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 15,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 2,
+        "quote_not_found": 1,
+        "lexical_overlap": 2,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.3,
+        0.556,
+        0.333,
+        0.375,
+        0.667,
+        0.6,
+        1.0,
+        0.125,
+        0.167,
+        0.6,
+        0.714,
+        0.5,
+        0.833,
+        0.571,
+        0.571,
+        0.438,
+        0.667
+      ],
+      "extra_candidates": 11,
+      "extra_evidence": 9
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 5,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 2,
+        "quote_not_found": 2,
+        "lexical_overlap": 1,
+        "near_duplicate": 10,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.3,
+        0.556,
+        0.333,
+        0.375,
+        0.6,
+        0.0,
+        0.125,
+        0.667,
+        0.6,
+        0.714,
+        0.5,
+        0.833,
+        0.429,
+        0.571,
+        0.556,
+        0.5
+      ],
+      "extra_candidates": 2,
+      "extra_evidence": 0
+    }
+  ]
+}

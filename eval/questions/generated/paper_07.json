@@ -1,0 +1,412 @@
+{
+  "paper": "paper_07_short_b.pdf",
+  "corpus_id": "paper_07",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_07_r0_d01",
+      "type": "factual",
+      "question": "What is the name of the smaller language representation model proposed in the work?",
+      "answer": "DistilBERT",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "we propose a method to pre-train a smaller generalpurpose language representation model, called DistilBERT"
+        },
+        {
+          "page": 2,
+          "text": "Student architecture In the present work, the student - DistilBERT - has the same general architecture as BERT. The token-type embeddings and the pooler are"
+        },
+        {
+          "page": 3,
+          "text": "Table 1: DistilBERT retains 97% of BERT performance. Comparison on the dev sets of the GLUE benchmark. ELMo"
+        },
+        {
+          "page": 4,
+          "text": "To further investigate the speed-up/size trade-off of DistilBERT, we compare (in Table 3) the number of parameters of each model along with the"
+        },
+        {
+          "page": 5,
+          "text": "We introduced DistilBERT, a general-purpose pre-trained version of BERT, 40% smaller, 60% faster, that retains 97% of the"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d02",
+      "type": "factual",
+      "question": "What is a concern related to the scaling of pre-trained language models?",
+      "answer": "the environmental cost",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "First is the environmental cost of exponentially scaling these models’ computational requirements"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.286,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d03",
+      "type": "factual",
+      "question": "What percentage faster at inference time is the smaller Transformer model compared to the larger one?",
+      "answer": "60%",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "the supervision of a bigger Transformer language model can achieve similar performance on a variety of downstream tasks, while being 60% faster at inference time."
+        },
+        {
+          "page": 1,
+          "text": "a BERT model by 40%, while retaining 97% of its language understanding capabilities and being 60% faster. To leverage the inductive biases learned by larger models during pre-training, we introduce a"
+        },
+        {
+          "page": 4,
+          "text": "using a batch size of 1. DistilBERT has 40% fewer parameters than BERT and is 60% faster than BERT."
+        },
+        {
+          "page": 5,
+          "text": "We introduced DistilBERT, a general-purpose pre-trained version of BERT, 40% smaller, 60% faster, that retains 97% of the language understanding capabilities. We showed that a general-purpose language"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d04",
+      "type": "factual",
+      "question": "What is the main purpose of knowledge distillation?",
+      "answer": "to reproduce the behaviour of a larger model",
+      "evidence": [
+        {
+          "page": 2,
+          "text": "a compact model - the student - is trained to reproduce the behaviour of a larger model - the teacher"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.0,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d14",
+      "type": "table",
+      "question": "What is the score of BERT-base?",
+      "answer": "79.5",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "| BERT-base | 79.5 | 56.3 | 86.7 | 88.6 | 91.8 | 89.6 | 69.3 | 92.7 | 89.0 | 53.5 |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.667,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d19",
+      "type": "multi_section",
+      "question": "What are two techniques mentioned for compressing large models besides knowledge distillation?",
+      "answer": "weights pruning and quantization",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "Recent developments in weights pruning reveal that it is possible to remove some heads in the self-attention at test time without significantly degrading the performance"
+        },
+        {
+          "page": 4,
+          "text": "A separate line of study leverages quantization to derive smaller models"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.111,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r0_d20",
+      "type": "multi_section",
+      "question": "What is the impact of removing the Masked Language Modeling loss on the distilled model's performance?",
+      "answer": "little impact",
+      "evidence": [
+        {
+          "page": 4,
+          "text": "removing the Masked Language Modeling loss has little impact"
+        },
+        {
+          "page": 4,
+          "text": "the two distillation losses account for a large portion of the performance."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.7,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_07_r1_d14",
+      "type": "table",
+      "question": "What is the score for BERT-base on the MNLI task?",
+      "answer": "86.7",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "| BERT-base | 79.5 | 56.3 | 86.7 | 88.6 | 91.8 | 89.6 | 69.3 | 92.7 | 89.0 | 53.5 |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.4,
+      "answerable_without_document": true,
+      "round": 1
+    },
+    {
+      "id": "paper_07_r1_d18",
+      "type": "multi_section",
+      "question": "What is the percentage reduction in size of the BERT model achieved by DistilBERT?",
+      "answer": "40%",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "reduce the size of a BERT model by 40%"
+        },
+        {
+          "page": 4,
+          "text": "remove some heads in the self-attention at test time without significantly degrading the performance"
+        },
+        {
+          "page": 3,
+          "text": "on STS-B). DistilBERT also compares surprisingly well to BERT, retaining 97% of the performance with 40% fewer parameters."
+        },
+        {
+          "page": 5,
+          "text": "We introduced DistilBERT, a general-purpose pre-trained version of BERT, 40% smaller, 60% faster, that retains 97% of the language understanding capabilities. We showed that a"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": false,
+      "round": 1
+    },
+    {
+      "id": "paper_07_r1_d19",
+      "type": "multi_section",
+      "question": "What is the size difference in parameters between DistilBERT and BERT on the IMDb benchmark?",
+      "answer": "40% smaller",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "DistilBERT is only 0.6% point behind BERT in test accuracy on the IMDb benchmark while being 40% smaller."
+        },
+        {
+          "page": 1,
+          "text": "the growing computational and memory requirements of these models may hamper wide adoption."
+        },
+        {
+          "page": 5,
+          "text": "We introduced DistilBERT, a general-purpose pre-trained version of BERT, 40% smaller, 60% faster, that retains 97% of the language understanding capabilities. We showed that a general-purpose"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 1
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 12,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 7,
+        "quote_not_found": 0,
+        "lexical_overlap": 1,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.571,
+        0.286,
+        0.5,
+        0.0,
+        0.0,
+        0.667,
+        0.625,
+        0.5,
+        0.889,
+        0.545,
+        0.667,
+        0.111,
+        0.7
+      ],
+      "extra_candidates": 7,
+      "extra_evidence": 7
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 6,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 7,
+        "quote_not_found": 0,
+        "lexical_overlap": 1,
+        "near_duplicate": 6,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.571,
+        0.286,
+        0.222,
+        0.0,
+        0.0,
+        0.667,
+        0.625,
+        0.625,
+        0.889,
+        0.545,
+        0.4,
+        0.429,
+        0.5
+      ],
+      "extra_candidates": 9,
+      "extra_evidence": 7
+    }
+  ]
+}

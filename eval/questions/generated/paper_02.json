@@ -1,0 +1,382 @@
+{
+  "paper": "paper_02_two_column.pdf",
+  "corpus_id": "paper_02",
+  "prompt_version": "stage4-v2",
+  "generator_model": "gpt-4o-mini",
+  "seed": "stage4",
+  "rounds": 2,
+  "questions": [
+    {
+      "id": "paper_02_r0_d01",
+      "type": "factual",
+      "question": "What was the error rate achieved by the ensemble of residual nets on the ImageNet test set?",
+      "answer": "3.57%",
+      "evidence": [
+        {
+          "page": 1,
+          "text": "An ensemble of these residual nets achieves 3.57% error on the ImageNet test set."
+        },
+        {
+          "page": 2,
+          "text": "presented on ImageNet, while still having lower complexity than VGG nets [41]. Our ensemble has 3.57% top-5 error on the"
+        },
+        {
+          "page": 6,
+          "text": "PReLU-net [13] | 4.94 | | BN-inception [16] | 4.82 | | **ResNet (ILSVRC’15)** | **3.57** |"
+        },
+        {
+          "page": 7,
+          "text": "an ensemble (only with two 152-layer ones at the time of submitting). This leads to 3.57% top-5 error on the test set (Table 5). This entry won the 1st place in"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.778,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d03",
+      "type": "factual",
+      "question": "What do experiments suggest about learned residual functions?",
+      "answer": "identity mappings provide reasonable preconditioning",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "the learned residual functions in general have small responses, suggesting that identity mappings provide reasonable preconditioning."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d04",
+      "type": "factual",
+      "question": "What is the purpose of the matrix Ws in the equation?",
+      "answer": "to match the dimensions",
+      "evidence": [
+        {
+          "page": 3,
+          "text": "by experiments that the identity mapping is sufficient for addressing the degradation problem and is economical, and thus Ws is only used when matching dimensions."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.25,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d05",
+      "type": "factual",
+      "question": "What is the number of layers in ResNet-34?",
+      "answer": "34 layers",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "50 50 40 40 34-layer 18-layer 30 30 18-layer plain-18 ResNet-18 plain-34 ResNet-34 34-layer 20 20 0 10 20 30 40 50 0 10 20"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.5,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d06",
+      "type": "factual",
+      "question": "What is the percentage improvement of the 34-layer ResNet over the 18-layer ResNet?",
+      "answer": "2.8%",
+      "evidence": [
+        {
+          "page": 5,
+          "text": "the 34-layer ResNet is better than the 18-layer ResNet (by 2.8%)"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.571,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d07",
+      "type": "factual",
+      "question": "What is the main advantage of using identity shortcuts in bottleneck architectures?",
+      "answer": "more efficient models",
+      "evidence": [
+        {
+          "page": 6,
+          "text": "identity shortcuts lead to more efficient models for the bottleneck designs."
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d08",
+      "type": "factual",
+      "question": "What is the initial learning rate used for training the models?",
+      "answer": "0.1",
+      "evidence": [
+        {
+          "page": 7,
+          "text": "We start with a learning rate of 0.1"
+        },
+        {
+          "page": 4,
+          "text": "scratch. We use SGD with a mini-batch size of 256. The learning rate starts from 0.1 and is divided by 10 when the error plateaus, and the models are trained for"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.333,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d09",
+      "type": "factual",
+      "question": "What is the size of the 1202-layer network mentioned?",
+      "answer": "19.4M",
+      "evidence": [
+        {
+          "page": 8,
+          "text": "the 1202-layer network may be unnecessarily large (19.4M) for this small dataset."
+        },
+        {
+          "page": 7,
+          "text": "| | ResNet | 110 | 1.7M | **6.43**(6.61_±_0.16) | | ResNet | 1202 | 19.4M | 7.93 |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.6,
+      "answerable_without_document": false,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d17",
+      "type": "table",
+      "question": "What is the mAP value for the baseline+++ system using ResNet-101?",
+      "answer": "83.8",
+      "evidence": [
+        {
+          "page": 11,
+          "text": "| baseline+++ | ResNet-101 | COCO+07++12 | **83.8** | **92.1 88.4 84.8 75.9 71.4 86.3 87.8 94.2 66.8 89.4 69.2 93.9 91.9 90.9 89.6 67.9 88.2 76.8 90.3 80.0** |"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.429,
+      "answerable_without_document": true,
+      "round": 0
+    },
+    {
+      "id": "paper_02_r0_d20",
+      "type": "multi_section",
+      "question": "What is the improvement in mAP from box refinement and global context in the methods described?",
+      "answer": "about 2 points and about 1 point",
+      "evidence": [
+        {
+          "page": 10,
+          "text": "Box refinement improves mAP by about 2 points"
+        },
+        {
+          "page": 10,
+          "text": "Global context improves mAP@.5 by about 1 point"
+        }
+      ],
+      "verified": true,
+      "verification": "machine",
+      "checks_passed": [
+        "quote_found",
+        "pages_computed",
+        "extra_evidence_searched",
+        "judge",
+        "lexical_overlap",
+        "near_duplicate"
+      ],
+      "generator_model": "gpt-4o-mini",
+      "prompt_version": "stage4-v2",
+      "lexical_overlap": 0.625,
+      "answerable_without_document": false,
+      "round": 0
+    }
+  ],
+  "generation": [
+    {
+      "round": 0,
+      "drafted": 20,
+      "accepted": 12,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 1,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 3,
+        "quote_not_found": 2,
+        "lexical_overlap": 2,
+        "near_duplicate": 0,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.778,
+        0.5,
+        0.25,
+        0.5,
+        0.571,
+        0.429,
+        0.333,
+        0.6,
+        0.6,
+        0.125,
+        0.8,
+        0.9,
+        0.429,
+        0.625
+      ],
+      "extra_candidates": 6,
+      "extra_evidence": 5
+    },
+    {
+      "round": 1,
+      "drafted": 20,
+      "accepted": 9,
+      "kept_after_round": 10,
+      "rejected": {
+        "llm_error": 0,
+        "invalid_json": 0,
+        "missing_fields": 0,
+        "type_mismatch": 0,
+        "mentions_location": 0,
+        "quote_length": 3,
+        "quote_not_found": 3,
+        "lexical_overlap": 3,
+        "near_duplicate": 2,
+        "judge_invalid": 0,
+        "judge_not_answerable": 0,
+        "judge_not_single_answer": 0
+      },
+      "overlaps": [
+        0.4,
+        0.778,
+        0.333,
+        0.25,
+        0.333,
+        0.75,
+        1.0,
+        0.333,
+        0.4,
+        0.75,
+        0.6,
+        0.714,
+        0.8,
+        0.9
+      ],
+      "extra_candidates": 10,
+      "extra_evidence": 9
+    }
+  ]
+}

@@ -3,18 +3,17 @@
 Update this file at the end of every chat. Newest stage at the top of the log.
  
 ## Current status
-- **Current stage:** **Stage 4 code written, awaiting the owner's run** (mini evaluation;
-  notes 0024 and 0025, results still `TO FILL`). Stage 3 done (gate PASS, note 0022).
-  Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
+- **Current stage:** **Stage 4 done** (mini evaluation; gate PASS, note 0026). Next: Stage 5
+  (hybrid, rerank, parent retrieval; start with re-ingesting the routed dev documents).
+  Stage 3 done (gate PASS, note 0022). Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
 - **Last updated:** 2026-11-18
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
-- **Tests:** 379 passed, 7 deselected (last owner run, before Stage 4). Stage 4 adds 138
-  tests (517 passed, 7 deselected at the v1 run), and the question pipeline v2 adds 21,
-  so the expected normal run is 538 passed, 7 deselected.
-  TO FILL from owner's run: the real test count after Stage 4.
-  Decision notes 0001-0025 (0008 superseded by note 0018); 0023 (code-only stage mode),
-  0024 (question set and verification) and 0025 (mini evaluation) added 2026-11-16.
+- **Tests:** 543 passed, 7 deselected (owner's run after the Stage 4 close-out Part A:
+  538 + 5 new tests for the table token budget default).
+  Decision notes 0001-0026 (0008 superseded by note 0018); 0023 (code-only stage mode),
+  0024 (question set and verification) and 0025 (mini evaluation) added 2026-11-16;
+  0026 (Stage 4 gate) added 2026-11-18.
 - **Branch:** Stage 4 on `stage4-mini-evaluation` (owner commits after checks).
 - **Working mode (from Stage 2 Step 3):** Claude Code only creates and edits files; the
   owner runs every command (tests, linters, scripts, docker, git) and fills in
@@ -30,7 +29,7 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 | 1 | Upload, parsing, job status | Done (headings and tables moved to Stage 3) |
 | 2 | Baseline RAG | Done (gate 10/10, note 0016) |
 | 3 | Strategy interface, profiler, router (+ headings, tables) | Done |
-| 4 | Mini evaluation | Code written, awaiting the owner's run |
+| 4 | Mini evaluation | Done (gate PASS, note 0026) |
 | 5 | Hybrid, rerank, parent retrieval | Not started |
 | 6 | Full evaluation | Not started |
 | 7 | Notebooks and multi-document search | Not started |
@@ -88,8 +87,7 @@ Run checklist (owner):
      `strategies/section_aware.py`. `get_vocabulary()` in
      `embedding/sentence_transformer.py`.
    - No migration, no new dependency, no new setting.
-   - Tests: 138 new (expected 517 passed, 7 deselected).
-     TO FILL from owner's run: test count.
+   - Tests: 138 new (517 passed, 7 deselected at the v1 run).
 2. **v1 question run (2026-11-18):** 126 drafted, 25 kept, every target missed; calibration
    1 of 10 (numbers and reasons in note 0024, "v1 run (history)").
 3. **Question pipeline v2 (2026-11-18, code written, not run yet; stage file
@@ -98,11 +96,37 @@ Run checklist (owner):
    `answerable_without_document`); the judge sees the block around each quote; `quote_words()`
    ignores table symbols; short quotes are extended to their sentence or table row by
    code; table drafts = min(4, 2 x usable tables); 20 drafts per document; the script stops
-   on files with another prompt version. Tests: 21 new (expected 538 passed, 7 deselected).
-   TO FILL from owner's run: test count.
-4. **Owner's run:** TO FILL from owner's run: question totals and calibration (v2, note
-   0024), results table and rule outcomes (note 0025). Before the question run, delete the
-   v1 files in `eval/questions/generated/`.
+   on files with another prompt version. Tests: 21 new (538 passed, 7 deselected).
+4. **v2 question run and extra round (2026-11-18, owner's run).** Round 0: drafted 180,
+   passed 95, kept 84, table 4 and multi-section 13 (a target was missed). Extra round:
+   final set drafted 360, passed 157, kept 90 (10 per document); table 6 (target 15 not
+   met), multi-section 24 (met), accepted 90 (met). Calibration on the owner set: 6 of 10
+   accepted (v1: 1 of 10). Details in note 0024.
+5. **Mini evaluation (2026-11-18, owner's run).** Recall@5: fixed_size 0.867, recursive
+   0.844, section_aware 0.844, router 0.844, oracle 0.900 (90 questions, 9 dev documents,
+   intervals overlap). Rules: table budget ADOPT, very short NO RULE, router KEEP v1. Note
+   0025.
+6. **Close-out (2026-11-18).** Owner's decisions: the table token budget becomes the
+   default (512); `retrieval_min_score` stays at 0.55 (the 0.567 proposal is not taken);
+   the glued-word detector is recorded as inconclusive (a better method is a Stage 5 item).
+   Part A (code): `DEFAULT_TABLE_TOKEN_BUDGET` in `chunking/segments.py`, used by
+   recursive and section_aware (cache key changes on purpose); `mini_eval.py` passes the
+   budget explicitly so Stage 4 still reproduces; 5 new tests, 543 passed, 7 deselected.
+   Part B (docs): notes 0024, 0025, 0026, CLAUDE.md, this file. **Stage 4 done.**
+
+## Stage 4 gate
+| Item | Result |
+| --- | --- |
+| Question set built and machine-verified | 90 questions on 9 dev documents (note 0024) |
+| Question targets | accepted 90 (target 70: met), multi-section 24 (target 10: met), table 6 (target 15: not met) |
+| Verifier calibrated on the owner set | accepted 6 of 10 (v1: 1 of 10) |
+| Rules fixed before the run, each printed its outcome | table budget ADOPT, very short NO RULE, router KEEP v1 |
+| Strategies differ | chunks per strategy: paper_01 43 / 45 / 56, doc_08 52 / 56 / 57 (fixed_size / recursive / section_aware) |
+| Results | Recall@5 0.867 / 0.844 / 0.844, router 0.844, oracle 0.900; no strategy separates on dev (note 0025) |
+| Cost | 442,030 input and 37,375 output tokens, about $0.09 |
+| Tests | 543 passed, 7 deselected |
+
+Gate: PASS (note 0026). One command prints the results: `python scripts/mini_eval.py`.
  
 ## Stage 3 plan (approved, revised 2026-11-08)
 Purpose: let each document get one of several industry-standard splitters automatically,
@@ -505,6 +529,14 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   revealed it. Compare hashes, not names.
 - How you count decides what you see: glued table rows made MTEB look 80-96% lost;
   counting real words showed only 3 pages lost text.
+- A `/goal` condition must be checkable from the chat transcript. "Every file re-read" is
+  not, so the checker looped and used up the usage limit.
+- "Connection refused" on port 5432 means the database container is not running.
+- "Needs the document" is an answer-evaluation criterion, not a retrieval one.
+- Markdown table symbols counted as words made table quotes look too long.
+- Overlap at least as long as the longest quote means no quote is ever split.
+- A detector that flags real words measures the tokenizer, not the parser.
+- The title in every section_aware prefix makes all chunks look alike.
 ## Decisions made so far
 - FastAPI (rejected Flask, Django). PostgreSQL 17 (rejected SQLite, MySQL, MongoDB).
 - SQLAlchemy 2.0 sync, psycopg 3; Alembic migrations with `alembic check` in CI;
@@ -561,6 +593,10 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
   - `table_token_budget` is left out of the params when it is None, so stored chunk sets
     keep their cache key.
   - Token usage is read from `LLM.last_usage` (added to the seam) by `RecordingLLM`.
+- Owner's decisions, 2026-11-18 (Stage 4 close-out): table token budget ADOPT, 512 is the
+  default; `retrieval_min_score` kept at 0.55; glued-word detector inconclusive, a better
+  method is a Stage 5 item; a table-question pipeline (v3) is decided before Stage 6, on
+  dev only.
 ## Deferred / known limits
 - Headings and tables: Stage 3. Compare note 0008 rules with pymupdf4llm first.
   IEEE-style headings (paper_05) not covered by the drafted rules. pymupdf4llm 2.0 is
@@ -698,13 +734,25 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
 12. Why does the judge get its own prompt, and why is it still a weak check?
 13. Why is "needs the document" a check for answer evaluation but not for retrieval
     evaluation?
+14. Why does a 40-word overlap guarantee that no 25-word quote is split, and what changes
+    with a 10-word overlap?
+15. Why did the document title in the section-aware prefix make "What does MTEB stand for?"
+    fail?
+16. Why does the oracle adding only 3 questions over the best single strategy say that
+    routing has little to gain on dev?
 
 ## Open items / notes for the next chat
-- Stage 4 code is written (code-only stage, note 0023). The owner runs the run checklist
-  in "Stage 4 plan"; fixes follow in the same chat. Then fill every
-  `TO FILL from owner's run` in notes 0024 and 0025 and in this file.
-- After the run: follow-up prompt for the table token budget default (only if the rule
-  printed ADOPT), and the owner's decision on `retrieval_min_score`.
+- Stage 4 is done (note 0026). Open items for Stage 5:
+  - Re-ingest the routed dev documents first: the table budget default changed the cache
+    key of recursive and section_aware.
+  - BM25 with reciprocal rank fusion, a reranker, parent expansion scored on the child
+    chunk.
+  - A prefix switch with 3 settings (full prefix / no prefix / prefix without the title).
+  - A working glued-word detector.
+  - Latency per query.
+  - Revisit router rule v1 after these (not supported by dev data, note 0025).
+- Open items for Stage 6: a table-question pipeline v3 (dev only, decided before the test
+  questions exist); test questions generated with the frozen pipeline.
 - Model in Docker: decided, `hf-cache` volume (note 0013); baking it in is a Stage 9
   option.
 - Chunks over 512 tokens: decided, option A (note 0012); ingest now warns per document.

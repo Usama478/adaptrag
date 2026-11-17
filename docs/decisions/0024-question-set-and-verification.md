@@ -1,7 +1,7 @@
 # 0024: Question set and machine verification
 
-Status: Accepted (v2 code written 2026-11-18; v2 numbers are `TO FILL` until the owner's run)
-Date: 2026-11-16 (v1), revised 2026-11-18 (v2)
+Status: Accepted (v2 run by the owner on 2026-11-18; results below)
+Date: 2026-11-16 (v1), revised 2026-11-18 (v2), results filled 2026-11-18
 
 ## v1 run (history)
 The first pipeline (prompt version `stage4-v1`) was run by the owner on 2026-11-18, before
@@ -138,18 +138,47 @@ costs in credibility.
   this reason.
 
 ## Results (owner's run, v2)
-- Answerable without the document (judge label, of the kept questions): TO FILL from
-  owner's run: the "answerable without the document" line.
-- Drafted / passed / kept: TO FILL from owner's run: totals printed by
-  `generate_questions.py`.
-- Rejections per check: TO FILL from owner's run: the "rejections per check" block.
-- Lexical overlap distribution: TO FILL from owner's run: the five buckets.
-- Extra evidence locations (confirmed / candidates): TO FILL from owner's run.
-- Targets (70 / 15 / 10): TO FILL from owner's run: met or not met, and whether the extra
-  round was used.
-- **Verifier's acceptance on the owner set:** TO FILL from owner's run: "accepted N of 10"
-  and the rejection reasons.
-- Tokens used: TO FILL from owner's run: the stage total printed at the end.
+Owner's runs, prompt version `stage4-v2`. The question-generation numbers are not saved in
+a results file; they are copied here from the script's printed output.
+
+- **Round 0:** drafted 180, passed 95, kept 84; table questions 4, multi-section 13;
+  177,521 input and 14,179 output tokens. A target was missed (table), so the one extra
+  round was used (`--extra-round`).
+- **Final set (after the extra round):** drafted 360, passed 157, kept 90 (10 per
+  document, the cap). Table 6 (target 15: **NOT MET**), multi-section 24 (target 10: met),
+  accepted 90 (target 70: met). Extra round: 158,514 input and 13,503 output tokens.
+- **Rejections per check (final, 203 in all):** quote_length 99, near_duplicate 40,
+  quote_not_found 28, lexical_overlap 26, judge_not_answerable 5, invalid_json 3,
+  missing_fields 2, every other reason 0.
+- **Lexical overlap of the 228 drafts that reached check 5:** 0.0-0.2: 32, 0.2-0.4: 48,
+  0.4-0.6: 67, 0.6-0.8: 55, 0.8-1.0: 26 (rejected). Most questions share 40-80% of their
+  content words with their evidence (122 of 228), so retrieval on them is easier than on
+  real user questions.
+- **Extra evidence locations:** 66 confirmed of 106 candidates.
+- **Answerable without the document** (judge label only, of the 90 kept): 37.
+- **Verifier's acceptance on the owner set (calibration):** accepted 6 of 10
+  (judge_not_answerable 2, quote_not_found 1, lexical_overlap 1). v1 accepted 1 of 10.
+- **Tokens used, Stage 4 total (`eval/llm_usage.jsonl`, v1 and v2 runs together):** 442,030
+  input and 37,375 output tokens, about $0.09 at $0.15 / $0.60 per million tokens.
+
+## What the results say about the verifier
+- **It is strict.** It rejected 4 of the 10 owner-verified questions, questions a person
+  checked against the PDF (judge_not_answerable 2, quote_not_found 1, lexical_overlap 1).
+  Some good questions are therefore lost.
+- **It also lets bad questions through.** At least 2 of the 14 questions the router failed
+  (note 0025) are invalid:
+  - "What is the highest score recorded in the first passage?" (paper_09) leaks the
+    generator's view of its passage: a reader of the whole document cannot know which
+    passage is "first".
+  - "What is the number of layers in ResNet-34?" (paper_02) has figure-axis numbers
+    ("50 50 40 40 34-layer 18-layer ...") as its only evidence, not text that states the
+    answer.
+- **They stay in the set.** No question is removed after any strategy has been scored: that
+  would be tuning the benchmark on the results. They count against every strategy alike,
+  and the failure analysis names them.
+- **Table questions stayed at 6 of a target of 15.** A table-question pipeline (v3) is
+  decided before Stage 6, on dev documents only. The frozen v2 pipeline is what generates
+  the test questions unless that decision says otherwise, and then it gets its own note.
 
 ## Known limits
 - The owner's paper_01 evidence quotes were written as location markers; several stop
