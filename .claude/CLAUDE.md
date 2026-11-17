@@ -382,7 +382,9 @@ once resolved to the wrong Python.
   (`evaluation/usage.py`): one line per call in `eval/llm_usage.jsonl`, and
   `check_budget()` before the first call (10,000,000 input / 1,000,000 output tokens per
   stage, AUTONOMOUS.md). The prompts and checks in `evaluation/generation.py` are frozen
-  (prompt version `stage4-v1`, note 0024): a change needs a new version and a note.
+  (prompt version `stage4-v2`, note 0024; v1 was replaced before any strategy was scored):
+  a change needs a new version and a note. `generate_questions.py` stops if a generated
+  file has another prompt version.
 - **Strategies:** dense.py and strategies/ never import ingest.py (import loop, guarded by
   tests/test_import_order.py). `RecursiveStrategy` and `SectionAwareStrategy` take an
   optional `table_token_budget` (default None = off, and then absent from `params`, so
@@ -518,9 +520,10 @@ is a Stage 5 switch.
 - Questions are machine-verified, not hand-verified (owner's decision, note 0024): an LLM
   drafts them from parser passages and every question must pass the six checks in
   `evaluation/generation.py` (quote found in the document, pages computed by code, extra
-  evidence locations, a separate judge prompt, lexical overlap under 80%, no
-  near-duplicates). The pipeline is frozen after Stage 4 and reused untuned for the test
-  documents. Always report the cost with the numbers: no human checked the questions, they
+  evidence locations, a separate judge prompt that also sees the block around each quote,
+  lexical overlap under 80%, no near-duplicates; the judge's "needs the document" answer is
+  only a stored label, `answerable_without_document`). The pipeline (v2) is frozen after
+  Stage 4 and reused untuned for the test documents. Always report the cost with the numbers: no human checked the questions, they
   are worded from the parser's text, and the judge is the generator's model. The 10
   owner-verified paper_01 questions stay a separate set and a separate row.
 - Relevance (note 0025): a chunk is relevant if it contains the whole normalised evidence,
@@ -531,6 +534,8 @@ Stages 0-9 (skeleton, upload/parse, baseline RAG, strategy/router, mini eval,
 hybrid/rerank, full eval, notebooks, frontend, hardening/deploy).
 **Status: Stage 4 code written, awaiting the owner's run (machine-verified questions,
 mini evaluation, rules fixed before the run; notes 0024 and 0025, results `TO FILL`).
+The question pipeline was fixed to prompt version `stage4-v2` after the v1 run missed every
+target (note 0024, `.claude/stages/stage4_v2.md`); delete the v1 question files, then rerun.
 Stage 3 done (profiler, router, three strategies; gate PASS, note 0022).
 Stage 2 done (baseline RAG: fixed-size chunks, bge-small, pgvector exact search,
 gpt-4o-mini answers with page citations; gate 10/10 cited the right page on paper_01,

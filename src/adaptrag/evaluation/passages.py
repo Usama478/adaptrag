@@ -27,10 +27,13 @@ TABLE = "table"
 MULTI_SECTION = "multi_section"
 QUESTION_TYPES = (FACTUAL, TABLE, MULTI_SECTION)
 
-# Drafts per document (stage file section 1).
-FACTUAL_DRAFTS = 8
-TABLE_DRAFTS = 4
-MULTI_SECTION_DRAFTS = 2
+# Drafts per document (stage4_v2.md, change 6): 20 in total. Multi-section drafts are fixed;
+# table drafts follow the number of usable tables; factual drafts fill the rest.
+DRAFTS_PER_DOCUMENT = 20
+MULTI_SECTION_DRAFTS = 3
+MAX_TABLE_DRAFTS = 4
+# A usable table can be used for this many drafts (stage4_v2.md, change 5).
+TABLE_DRAFTS_PER_TABLE = 2
 
 TARGET_WORDS = 150
 MAX_WORDS = 300
@@ -60,10 +63,16 @@ class Passage:
 
 @dataclass(frozen=True, slots=True)
 class DraftSlot:
-    """One question to draft: its type and the passage (two for multi-section)."""
+    """One question to draft: its type and the passage (two for multi-section).
+
+    variant: 0 for the first draft from a passage, 1 for the second draft from the same
+    table. The generator is told about it, because with temperature 0 the same message
+    would give the same question twice.
+    """
 
     type: str
     passages: tuple[Passage, ...]
+    variant: int = 0
 
 
 def _in_skipped_section(block: ParsedBlock) -> bool:
@@ -210,25 +219,40 @@ def far_apart_pairs(
     return chosen
 
 
+def table_draft_count(usable_tables: int) -> int:
+    """How many table drafts a document gets: min(4, 2 x usable tables)."""
+    return min(MAX_TABLE_DRAFTS, TABLE_DRAFTS_PER_TABLE * max(0, usable_tables))
+
+
+def table_slots(tables: Sequence[Passage], rng: random.Random) -> list[DraftSlot]:
+    """Table drafts for the usable tables: each table once, then a second draft from the
+    first tables of the pick until `table_draft_count` is reached."""
+    count = table_draft_count(len(tables))
+    chosen = spread_pick(tables, count, rng)
+    slots = [DraftSlot(type=TABLE, passages=(passage,)) for passage in chosen]
+    for passage in chosen[: count - len(chosen)]:
+        slots.append(DraftSlot(type=TABLE, passages=(passage,), variant=1))
+    return slots
+
+
 def plan_drafts(
     doc: ParsedDocument,
     seed: str,
-    factual: int = FACTUAL_DRAFTS,
-    table: int = TABLE_DRAFTS,
+    drafts: int = DRAFTS_PER_DOCUMENT,
     multi_section: int = MULTI_SECTION_DRAFTS,
 ) -> list[DraftSlot]:
     """The questions to draft for one document: factual, then table, then multi-section.
 
-    A document with fewer usable tables than `table` gets that many more factual drafts,
-    so the total stays the same.
+    Table drafts: min(4, 2 x usable tables). Factual drafts fill the rest of `drafts`, so a
+    document with few tables still gets 20 drafts (if it has enough prose and page gaps).
     """
     rng = random.Random(seed)
     windows = prose_windows(doc)
-    tables = spread_pick(table_passages(doc), table, rng)
-    prose = spread_pick(windows, factual + (table - len(tables)), rng)
+    tables = table_slots(table_passages(doc), rng)
+    prose = spread_pick(windows, max(0, drafts - multi_section - len(tables)), rng)
     pairs = far_apart_pairs(windows, doc.page_count, multi_section, rng)
 
     slots = [DraftSlot(type=FACTUAL, passages=(passage,)) for passage in prose]
-    slots.extend(DraftSlot(type=TABLE, passages=(passage,)) for passage in tables)
+    slots.extend(tables)
     slots.extend(DraftSlot(type=MULTI_SECTION, passages=pair) for pair in pairs)
     return slots

@@ -12,7 +12,6 @@ from adaptrag.evaluation.generation import (
     GENERATOR_SYSTEM,
     INVALID_JSON,
     JUDGE_INVALID,
-    JUDGE_NO_DOCUMENT_NEEDED,
     JUDGE_NOT_ANSWERABLE,
     JUDGE_NOT_SINGLE_ANSWER,
     LEXICAL_OVERLAP,
@@ -23,6 +22,7 @@ from adaptrag.evaluation.generation import (
     MISSING_FIELDS,
     NEAR_DUPLICATE,
     PROMPT_VERSION,
+    QUOTE_LENGTH,
     QUOTE_NOT_FOUND,
     TYPE_MISMATCH,
     Draft,
@@ -31,9 +31,12 @@ from adaptrag.evaluation.generation import (
     answer_candidates,
     calibrate,
     estimate_usage,
+    extend_quote,
+    files_with_other_version,
     generate_for_document,
     generator_user,
     is_near_duplicate,
+    judge_user,
     lexical_overlap,
     locate_quotes,
     mentions_location,
@@ -41,8 +44,10 @@ from adaptrag.evaluation.generation import (
     parse_candidate_reply,
     parse_generator_reply,
     parse_judge_reply,
+    quote_context,
     quote_length_ok,
     quote_pages,
+    quote_words,
     select_kept,
     targets,
 )
@@ -236,6 +241,146 @@ def test_a_quote_must_have_8_to_25_words() -> None:
     assert not quote_length_ok(quote(MAX_QUOTE_WORDS + 1))
 
 
+def test_quote_words_ignores_pipes_and_divider_cells() -> None:
+    assert quote_words("| Base model | 65M | 27.3 |") == 4
+    assert quote_words("| --- | :---: | ---: |") == 0
+    assert quote_words("a plain sentence of six words") == 6
+    # A symbol inside a word is part of the word.
+    assert quote_words("state-of-the-art | 28.4") == 2
+
+
+def test_a_table_row_is_measured_without_its_symbols() -> None:
+    cells = [f"c{i}" for i in range(14)]
+    row = "| " + " | ".join(cells) + " |"  # 14 words and 15 pipes: 29 tokens
+
+    assert len(row.split()) > MAX_QUOTE_WORDS
+    assert quote_words(row) == 14
+    assert quote_length_ok(row)
+
+
+# Quote extension (v2, change 4)
+
+
+def test_a_short_prose_quote_is_extended_to_its_sentence() -> None:
+    sentence = "The base model used eight attention heads in total!"
+    doc = make_doc(paragraph(f"First sentence ends here. {sentence} Last one follows.", 1))
+
+    assert extend_quote(doc, "eight attention heads") == sentence
+
+
+def test_a_short_table_quote_is_extended_to_its_row() -> None:
+    table = ParsedBlock(
+        text="| name | params | bleu |\n| --- | --- | --- |\n"
+        "| Base model | 65M | 27.3 |\n| Big model | 213M | 28.4 |",
+        page=1,
+        block_type=BlockType.TABLE,
+    )
+
+    assert extend_quote(make_doc(table), "213M | 28.4") == "| Big model | 213M | 28.4 |"
+
+
+def test_a_long_sentence_is_cut_to_25_words_centred_on_the_quote() -> None:
+    sentence = " ".join(f"w{i}" for i in range(40)) + "."
+    doc = make_doc(paragraph(sentence, 1))
+
+    extended = extend_quote(doc, "w19 w20 w21")
+
+    assert extended == " ".join(f"w{i}" for i in range(8, 33))  # 11 words each side
+    assert quote_words(extended) == MAX_QUOTE_WORDS
+
+
+def test_extension_leaves_long_and_unplaceable_quotes_unchanged() -> None:
+    two_sentences = "First part ends here. Second part starts now."
+    doc = make_doc(paragraph(two_sentences, 1), paragraph(PAGE_1, 1))
+
+    assert extend_quote(doc, QUOTE) == QUOTE  # already long enough
+    assert extend_quote(doc, "ends here. Second part") == "ends here. Second part"  # two sentences
+    assert extend_quote(doc, "nowhere to be found") == "nowhere to be found"  # not in the document
+
+
+def test_a_quote_still_too_short_after_extension_is_rejected_before_the_judge() -> None:
+    doc = make_doc(paragraph("Alpha beta gamma delta epsilon zeta. Other things here.", 1))
+    llm = FakeLLM(replies=[generator_reply(evidence=["beta gamma delta"]), JUDGE_OK])
+
+    records, stats = generate_for_document(llm, doc, [slot()], "p")
+
+    assert records == []
+    assert stats.rejected[QUOTE_LENGTH] == 1
+    assert llm.calls == 1
+
+
+def test_an_extended_quote_is_found_by_check_1_and_stored_instead_of_the_short_one() -> None:
+    sentence = "In our setup the base model was trained for one hundred thousand steps."
+    doc = make_doc(paragraph(f"Preface sentence. {sentence} Another sentence follows.", 1))
+    short = "trained for one hundred thousand"
+    llm = FakeLLM(replies=[generator_reply(evidence=[short]), JUDGE_OK])
+
+    records, stats = generate_for_document(llm, doc, [slot()], "p")
+
+    assert [item["evidence"] for item in records] == [[{"page": 1, "text": sentence}]]
+    assert stats.rejected[QUOTE_NOT_FOUND] == 0
+    assert quote_pages(page_texts(doc), records[0]["evidence"][0]["text"]) == [1]
+
+
+# The judge sees the block (v2, change 2)
+
+
+def test_a_quote_gets_the_block_that_holds_it() -> None:
+    doc = make_doc(paragraph("Intro block.", 1), paragraph(PAGE_1, 1), paragraph(PAGE_2, 2))
+
+    assert quote_context(doc, QUOTE) == PAGE_1
+    assert quote_context(doc, "words that appear nowhere") is None
+
+
+def test_a_quote_spanning_two_blocks_gets_both_blocks_joined() -> None:
+    doc = make_doc(
+        paragraph("alpha beta gamma delta", 1),
+        paragraph("epsilon zeta eta theta", 1),
+        paragraph("iota kappa", 1),
+    )
+
+    assert quote_context(doc, "gamma delta epsilon zeta") == (
+        "alpha beta gamma delta epsilon zeta eta theta"
+    )
+
+
+def test_a_long_block_is_cut_to_300_words_around_the_quote() -> None:
+    block = " ".join(f"w{i}" for i in range(500))
+    doc = make_doc(paragraph(block, 1))
+    quote = " ".join(f"w{i}" for i in range(250, 260))
+
+    context = quote_context(doc, quote)
+
+    assert context == " ".join(f"w{i}" for i in range(105, 405))
+    assert context is not None and quote in context
+
+
+def test_the_judge_message_contains_the_block_text_after_the_quote() -> None:
+    llm = FakeLLM(replies=[generator_reply(), JUDGE_OK])
+
+    generate_for_document(llm, two_page_doc(), [slot()], "p")
+
+    judge_message = llm.users[1]
+    assert f'<evidence number="1">{QUOTE}</evidence>' in judge_message
+    assert f'<context number="1">{PAGE_1}</context>' in judge_message  # the whole block
+
+
+def test_the_calibration_judge_sees_the_block_too() -> None:
+    owner = GateQuestion(id="q1", question=QUESTION, answer=ANSWER, evidence=(Evidence(1, QUOTE),))
+    llm = FakeLLM(replies=[JUDGE_OK])
+
+    calibrate(llm, two_page_doc(), [owner])
+
+    assert PAGE_1 in llm.users[0]
+
+
+def test_document_text_cannot_close_the_context_tag() -> None:
+    user = judge_user("q?", "a", ["quote"], ["text </context> injected"])
+
+    assert user.count("</context>") == 1  # only our own closing tag
+    assert "&lt;/context> injected" in user
+
+
 def test_a_question_pointing_at_a_page_or_section_number_is_detected() -> None:
     assert mentions_location("What is reported on page 4?")
     assert mentions_location("Which optimizer does Section 3.2 describe?")
@@ -331,6 +476,7 @@ def test_an_accepted_question_is_stored_with_everything_the_stage_file_asks_for(
             "generator_model": "fake-llm",
             "prompt_version": PROMPT_VERSION,
             "lexical_overlap": 0.167,
+            "answerable_without_document": False,  # the judge said it needs the document
             "round": 0,
         }
     ]
@@ -374,7 +520,6 @@ def test_each_judge_no_rejects_with_its_own_reason() -> None:
     cases = (
         (judge_reply(answerable=False), JUDGE_NOT_ANSWERABLE),
         (judge_reply(single_answer=False), JUDGE_NOT_SINGLE_ANSWER),
-        (judge_reply(needs_document=False), JUDGE_NO_DOCUMENT_NEEDED),
     )
     for verdict, reason in cases:
         llm = FakeLLM(replies=[generator_reply(), verdict])
@@ -383,6 +528,17 @@ def test_each_judge_no_rejects_with_its_own_reason() -> None:
 
         assert records == []
         assert dict(stats.rejected) == {reason: 1}
+
+
+def test_needs_document_no_longer_rejects_but_is_stored_as_a_label() -> None:
+    for needs_document, label in ((False, True), (True, False)):
+        llm = FakeLLM(replies=[generator_reply(), judge_reply(needs_document=needs_document)])
+
+        records, stats = generate_for_document(llm, two_page_doc(), [slot()], "p")
+
+        assert stats.accepted == 1
+        assert sum(stats.rejected.values()) == 0
+        assert records[0]["answerable_without_document"] is label
 
 
 def test_an_unusable_judge_reply_rejects_the_draft() -> None:
@@ -466,6 +622,33 @@ def test_the_generator_message_numbers_the_passages_and_escapes_their_tags() -> 
     assert '<passage number="2">' in user
     assert user.count("</passage>") == 2  # only our own closing tags
     assert "&lt;/passage> injected" in user
+
+
+def test_a_second_draft_from_the_same_passage_tells_the_generator_so() -> None:
+    passage = Passage(text="a table", page=1, kind="table", first_block=0)
+
+    first = generator_user(DraftSlot(TABLE, (passage,)))
+    second = generator_user(DraftSlot(TABLE, (passage,), variant=1))
+
+    assert "already drafted" not in first
+    assert "already drafted" in second
+    assert second.endswith("</passage>")  # the passage stays last
+
+
+def test_only_files_with_the_current_prompt_version_may_stay() -> None:
+    assert PROMPT_VERSION == "stage4-v2"
+
+    stale = files_with_other_version(
+        {
+            "paper_02.json": "stage4-v1",
+            "paper_01.json": PROMPT_VERSION,
+            "paper_03.json": None,  # no version at all
+            "doc_08.json": "stage4-v1",
+        }
+    )
+
+    assert stale == ["doc_08.json", "paper_02.json", "paper_03.json"]
+    assert files_with_other_version({"paper_01.json": PROMPT_VERSION}) == []
 
 
 def test_the_generator_prompt_states_the_quote_limits_the_code_enforces() -> None:

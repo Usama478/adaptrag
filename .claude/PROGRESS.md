@@ -6,11 +6,12 @@ Update this file at the end of every chat. Newest stage at the top of the log.
 - **Current stage:** **Stage 4 code written, awaiting the owner's run** (mini evaluation;
   notes 0024 and 0025, results still `TO FILL`). Stage 3 done (gate PASS, note 0022).
   Stage 2 done (Steps 1-7; gate PASS 10/10, note 0016).
-- **Last updated:** 2026-11-16
+- **Last updated:** 2026-11-18
 - **Repo:** public GitHub repo `adaptrag`, branch `main`, CI green (pgvector Postgres
   service in CI from Step 4).
 - **Tests:** 379 passed, 7 deselected (last owner run, before Stage 4). Stage 4 adds 138
-  tests, so the expected normal run is 517 passed, 7 deselected.
+  tests (517 passed, 7 deselected at the v1 run), and the question pipeline v2 adds 21,
+  so the expected normal run is 538 passed, 7 deselected.
   TO FILL from owner's run: the real test count after Stage 4.
   Decision notes 0001-0025 (0008 superseded by note 0018); 0023 (code-only stage mode),
   0024 (question set and verification) and 0025 (mini evaluation) added 2026-11-16.
@@ -89,8 +90,19 @@ Run checklist (owner):
    - No migration, no new dependency, no new setting.
    - Tests: 138 new (expected 517 passed, 7 deselected).
      TO FILL from owner's run: test count.
-2. **Owner's run:** TO FILL from owner's run: question totals and calibration (note 0024),
-   results table and rule outcomes (note 0025).
+2. **v1 question run (2026-11-18):** 126 drafted, 25 kept, every target missed; calibration
+   1 of 10 (numbers and reasons in note 0024, "v1 run (history)").
+3. **Question pipeline v2 (2026-11-18, code written, not run yet; stage file
+   `.claude/stages/stage4_v2.md`).** Prompt version `stage4-v2`, changed before any strategy
+   was scored: the judge no longer rejects on "needs the document" (stored as
+   `answerable_without_document`); the judge sees the block around each quote; `quote_words()`
+   ignores table symbols; short quotes are extended to their sentence or table row by
+   code; table drafts = min(4, 2 x usable tables); 20 drafts per document; the script stops
+   on files with another prompt version. Tests: 21 new (expected 538 passed, 7 deselected).
+   TO FILL from owner's run: test count.
+4. **Owner's run:** TO FILL from owner's run: question totals and calibration (v2, note
+   0024), results table and rule outcomes (note 0025). Before the question run, delete the
+   v1 files in `eval/questions/generated/`.
  
 ## Stage 3 plan (approved, revised 2026-11-08)
 Purpose: let each document get one of several industry-standard splitters automatically,
@@ -684,6 +696,8 @@ Moved out of Stage 3: parent-chunk expansion (Stage 5 switch); own heading rules
     instead of stopping when the budget is reached?
 11. Why can the glued-word detector only report candidates?
 12. Why does the judge get its own prompt, and why is it still a weak check?
+13. Why is "needs the document" a check for answer evaluation but not for retrieval
+    evaluation?
 
 ## Open items / notes for the next chat
 - Stage 4 code is written (code-only stage, note 0023). The owner runs the run checklist

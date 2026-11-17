@@ -1,9 +1,10 @@
 """Build the machine-verified question set for the dev documents (Stage 4, note 0024).
 
 For each of the 9 dev documents in eval/corpus.json: choose passages from the parser
-output with a fixed seed, let the LLM draft about 14 questions, verify every draft by code
+output with a fixed seed, let the LLM draft 20 questions, verify every draft by code
 and with a judge prompt, and keep up to 10. Writes eval/questions/generated/<corpus id>.json.
 The rules live in src/adaptrag/evaluation/passages.py and generation.py (unit-tested).
+Prompt version stage4-v2 (note 0024); a file with another version stops the script.
 
 - A document whose file already exists is skipped, so a run that stopped half-way can
   simply be started again.
@@ -34,6 +35,7 @@ from adaptrag.evaluation.generation import (
     GenerationStats,
     calibrate,
     estimate_usage,
+    files_with_other_version,
     generate_for_document,
     select_kept,
     targets,
@@ -132,6 +134,11 @@ def print_overlaps(overlaps: list[float]) -> None:
         print(f"  {low:.1f}-{high:.1f}: {count}{marker}")
 
 
+def count_answerable_without_document(questions: list[dict[str, Any]]) -> int:
+    """Kept questions the judge labelled as answerable without the document."""
+    return sum(1 for question in questions if question.get("answerable_without_document") is True)
+
+
 def print_totals(files: list[dict[str, Any]]) -> None:
     """Totals over every round stored in the files (this run and earlier ones)."""
     rejected: Counter[str] = Counter()
@@ -152,6 +159,10 @@ def print_totals(files: list[dict[str, Any]]) -> None:
     print_rejections(rejected)
     print_overlaps(overlaps)
     print(f"extra evidence locations: {extra} confirmed of {candidates} candidates")
+    labelled = count_answerable_without_document(
+        [question for data in files for question in data["questions"]]
+    )
+    print(f"answerable without the document (judge label, not a rejection): {labelled} of {kept}")
 
 
 def main() -> None:
@@ -172,6 +183,21 @@ def main() -> None:
 
     entries = dev_entries()
     existing = {entry.id: read_file(entry) for entry in entries}
+
+    # Never mix prompt versions: stop before anything is parsed or paid for.
+    other = files_with_other_version(
+        {
+            output_path(entry).name: data.get("prompt_version")
+            for entry in entries
+            if (data := existing[entry.id]) is not None
+        }
+    )
+    if other:
+        raise SystemExit(
+            f"These files in {OUTPUT_DIR.relative_to(REPO_ROOT)}/ were not written with prompt "
+            f"version {PROMPT_VERSION}: {', '.join(other)}. Delete them (the script never "
+            "mixes versions) and run it again."
+        )
 
     # Decide the round of each document before anything is parsed or paid for.
     rounds: dict[str, int] = {}
@@ -262,7 +288,9 @@ def main() -> None:
         existing[entry.id] = data
         print(
             f"{entry.id}: round {round_number}, drafted {stats.drafted}, "
-            f"passed {stats.accepted}, kept {len(kept)} in total"
+            f"passed {stats.accepted}, kept {len(kept)} in total "
+            f"({count_answerable_without_document(records)} of the new ones answerable "
+            "without the document)"
         )
         print_rejections(stats.rejected)
 

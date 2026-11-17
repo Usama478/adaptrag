@@ -12,7 +12,9 @@ from adaptrag.evaluation.passages import (
     plan_drafts,
     prose_windows,
     spread_pick,
+    table_draft_count,
     table_passages,
+    table_slots,
 )
 from adaptrag.parsing.blocks import BlockType, ParsedBlock, ParsedDocument
 
@@ -169,12 +171,12 @@ def test_the_plan_depends_only_on_the_document_and_the_seed() -> None:
 
 def test_the_plan_has_factual_table_and_multi_section_drafts() -> None:
     blocks = []
-    for page in range(1, 13):
+    for page in range(1, 21):
         blocks.extend([paragraph(words(160, f"p{page}w"), page), table(4, page)])
 
     slots = plan_drafts(make_doc(*blocks), "seed")
 
-    assert Counter(slot.type for slot in slots) == {FACTUAL: 8, TABLE: 4, MULTI_SECTION: 2}
+    assert Counter(slot.type for slot in slots) == {FACTUAL: 13, TABLE: 4, MULTI_SECTION: 3}
     assert all(len(slot.passages) == (2 if slot.type == MULTI_SECTION else 1) for slot in slots)
     assert all(slot.passages[0].kind == "table" for slot in slots if slot.type == TABLE)
 
@@ -185,4 +187,42 @@ def test_missing_table_drafts_become_factual_drafts() -> None:
 
     slots = plan_drafts(with_one_table, "seed")
 
-    assert Counter(slot.type for slot in slots) == {FACTUAL: 11, TABLE: 1, MULTI_SECTION: 2}
+    # One usable table gives min(4, 2 x 1) = 2 table drafts; factual drafts fill up to 20.
+    assert Counter(slot.type for slot in slots) == {FACTUAL: 15, TABLE: 2, MULTI_SECTION: 3}
+
+
+def test_a_document_gets_20_drafts() -> None:
+    no_tables = plan_drafts(one_window_per_page(30), "seed")
+
+    assert len(no_tables) == 20
+    assert Counter(slot.type for slot in no_tables) == {FACTUAL: 17, MULTI_SECTION: 3}
+
+
+def test_table_drafts_are_two_per_usable_table_up_to_four() -> None:
+    assert [table_draft_count(tables) for tables in (0, 1, 2, 3, 4, 9)] == [0, 2, 4, 4, 4, 4]
+
+
+def test_one_usable_table_is_drafted_twice_as_variant_0_and_1() -> None:
+    (passage,) = table_passages(make_doc(table(4)))
+
+    slots = table_slots([passage], random.Random(0))
+
+    assert [(slot.passages, slot.variant) for slot in slots] == [
+        ((passage,), 0),
+        ((passage,), 1),
+    ]
+
+
+def test_three_tables_give_four_drafts_and_four_tables_give_four_different_ones() -> None:
+    passages = [
+        Passage(text=f"table {index}", page=index + 1, kind="table", first_block=index)
+        for index in range(4)
+    ]
+
+    three = table_slots(passages[:3], random.Random(0))
+    four = table_slots(passages, random.Random(0))
+
+    assert [slot.variant for slot in three] == [0, 0, 0, 1]
+    assert {slot.passages[0] for slot in three} == set(passages[:3])
+    assert [slot.variant for slot in four] == [0, 0, 0, 0]
+    assert len({slot.passages[0] for slot in four}) == 4
