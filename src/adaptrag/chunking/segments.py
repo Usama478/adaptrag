@@ -5,8 +5,8 @@ heading prefix) and assigns the chunk indexes.
 
 Changing the rules here changes the chunks of every strategy that uses this module, so
 bump "version" in the params of each of them. The table token budget (Stage 4) is
-different: it is off by default and, when a strategy turns it on, it is part of that
-strategy's params, so the cache key changes by itself.
+different: it is part of a strategy's params whenever it is on, so the cache key changes
+by itself. It is on by default (DEFAULT_TABLE_TOKEN_BUDGET, note 0025); None turns it off.
 """
 
 import re
@@ -15,6 +15,10 @@ from collections.abc import Callable, Sequence
 from adaptrag.chunking.splitter import split_with_offsets, word_count
 from adaptrag.chunking.text_map import join_blocks, pages_for
 from adaptrag.parsing.blocks import BlockType, ParsedBlock
+
+# The default token budget of a table chunk for the strategies that chunk tables (note 0025:
+# text past 512 tokens is never embedded by bge-small). Defined here once, imported elsewhere.
+DEFAULT_TABLE_TOKEN_BUDGET = 512
 
 # Try a line break first, so an oversized table is cut between rows where possible.
 TABLE_SEPARATORS = ("\n", " ")

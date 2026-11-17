@@ -290,8 +290,17 @@ def prepare_document(
 
 
 def make_strategies(embedder: Embedder) -> dict[str, Strategy]:
-    """Variant label -> strategy. The three base ones come from the registry."""
-    strategies: dict[str, Strategy] = {name: build_strategy(name, embedder) for name in BASE}
+    """Variant label -> strategy.
+
+    Both budget settings are explicit: the registry's default is now 512 (Stage 4 close-out),
+    but the base rows are the Stage 4 run WITHOUT a budget, so they pass None. Otherwise the
+    base rows would equal the "+tb512" rows and the run would no longer reproduce.
+    """
+    strategies: dict[str, Strategy] = {
+        "fixed_size": build_strategy("fixed_size", embedder),
+        "recursive": RecursiveStrategy(embedder, table_token_budget=None),
+        "section_aware": SectionAwareStrategy(embedder, table_token_budget=None),
+    }
     strategies["recursive+tb512"] = RecursiveStrategy(
         embedder, table_token_budget=TABLE_TOKEN_BUDGET
     )

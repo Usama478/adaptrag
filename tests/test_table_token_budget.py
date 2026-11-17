@@ -7,10 +7,11 @@ import json
 
 import pytest
 
-from adaptrag.chunking.segments import chunk_table
+from adaptrag.chunking.segments import DEFAULT_TABLE_TOKEN_BUDGET, chunk_table
 from adaptrag.embedding.fake import FakeEmbedder
 from adaptrag.parsing.blocks import BlockType, ParsedBlock, ParsedDocument
 from adaptrag.strategies.recursive import RecursiveStrategy
+from adaptrag.strategies.registry import build_strategy
 from adaptrag.strategies.section_aware import SectionAwareStrategy
 
 HEADER = "| name | score |"
@@ -139,7 +140,7 @@ def test_a_token_budget_needs_a_counter_and_a_positive_value() -> None:
 
 
 def test_recursive_params_gain_the_budget_only_when_it_is_set() -> None:
-    plain = RecursiveStrategy(FakeEmbedder()).params
+    plain = RecursiveStrategy(FakeEmbedder(), table_token_budget=None).params
     budgeted = RecursiveStrategy(FakeEmbedder(), table_token_budget=512).params
 
     # Literal on purpose. The plain params must not change: they are the stored cache key.
@@ -154,7 +155,7 @@ def test_recursive_params_gain_the_budget_only_when_it_is_set() -> None:
 
 
 def test_section_aware_params_gain_the_budget_only_when_it_is_set() -> None:
-    plain = SectionAwareStrategy(FakeEmbedder()).params
+    plain = SectionAwareStrategy(FakeEmbedder(), table_token_budget=None).params
     budgeted = SectionAwareStrategy(FakeEmbedder(), table_token_budget=512).params
 
     assert plain == {"size_words": 200, "overlap_words": 40, "version": 1}
@@ -166,6 +167,43 @@ def test_section_aware_params_gain_the_budget_only_when_it_is_set() -> None:
     }
 
 
+def test_registry_builds_recursive_with_the_default_budget_of_512() -> None:
+    params = build_strategy("recursive", FakeEmbedder()).params
+
+    assert params["table_token_budget"] == 512  # literal on purpose
+    assert params["table_token_budget"] == DEFAULT_TABLE_TOKEN_BUDGET
+
+
+def test_registry_builds_section_aware_with_the_default_budget_of_512() -> None:
+    params = build_strategy("section_aware", FakeEmbedder()).params
+
+    assert params["table_token_budget"] == 512
+    assert params["table_token_budget"] == DEFAULT_TABLE_TOKEN_BUDGET
+
+
+def test_fixed_size_params_have_no_table_budget() -> None:
+    assert "table_token_budget" not in build_strategy("fixed_size", FakeEmbedder()).params
+
+
+def test_none_leaves_the_budget_out_of_the_params_of_both_strategies() -> None:
+    assert "table_token_budget" not in RecursiveStrategy(FakeEmbedder(), None).params
+    assert "table_token_budget" not in SectionAwareStrategy(FakeEmbedder(), None).params
+
+
+def test_the_default_budget_repeats_the_header_without_naming_a_budget() -> None:
+    # A default-built strategy splits a long table like the explicit 512 one, header on top.
+    embedder = FakeEmbedder()
+    doc = make_doc(strategy_table())  # 560 words of rows: over the 200-word budget
+
+    default = RecursiveStrategy(embedder).chunk(doc)
+    explicit = RecursiveStrategy(embedder, table_token_budget=512).chunk(doc)
+
+    assert [c.text for c in default] == [c.text for c in explicit]
+    assert len(default) > 1
+    start = "| first | second |\n| --- | --- |\n"
+    assert all(chunk.text.startswith(start) for chunk in default)
+
+
 def test_recursive_with_a_budget_keeps_table_chunks_within_it_and_prose_unchanged() -> None:
     embedder = FakeEmbedder()  # counts words + 2 as tokens
     prose = ParsedBlock(
@@ -173,7 +211,7 @@ def test_recursive_with_a_budget_keeps_table_chunks_within_it_and_prose_unchange
     )
     doc = make_doc(prose, strategy_table())
 
-    plain = RecursiveStrategy(embedder).chunk(doc)
+    plain = RecursiveStrategy(embedder, table_token_budget=None).chunk(doc)
     budgeted = RecursiveStrategy(embedder, table_token_budget=50).chunk(doc)
 
     table_chunks = [chunk for chunk in budgeted if chunk.text.startswith("|")]

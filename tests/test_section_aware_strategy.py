@@ -58,7 +58,13 @@ def test_params_equal_the_agreed_settings_and_survive_json() -> None:
     params = SectionAwareStrategy(FakeEmbedder()).params
 
     # Literal on purpose: comparing with section_aware.py could never catch a change there.
-    assert params == {"size_words": 200, "overlap_words": 40, "version": 1}
+    # The default table token budget (512) is part of the params, so of the cache key.
+    assert params == {
+        "size_words": 200,
+        "overlap_words": 40,
+        "version": 1,
+        "table_token_budget": 512,
+    }
     assert json.loads(json.dumps(params)) == params
 
 
@@ -135,7 +141,10 @@ def test_oversized_table_gives_the_prefix_then_whole_rows_only() -> None:
     rows = big_table_rows()
     prefix = "4 Results\n\n"
 
-    chunks = chunk(make_doc(heading("4 Results"), table("\n".join(rows))))
+    # Budget off on purpose: this test is about the word-budget split. With the default
+    # budget the header is repeated (tests/test_table_token_budget.py).
+    strategy = SectionAwareStrategy(FakeEmbedder(), table_token_budget=None)
+    chunks = strategy.chunk(make_doc(heading("4 Results"), table("\n".join(rows))))
 
     assert len(chunks) > 1
     assert all(c.text.startswith(prefix) for c in chunks)
